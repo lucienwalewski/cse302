@@ -1,0 +1,454 @@
+[
+    {
+        "proc": "@main",
+        "body": [
+            {
+                "opcode": "const",
+                "args": [
+                    0
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "const",
+                "args": [
+                    0
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "const",
+                "args": [
+                    0
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "const",
+                "args": [
+                    1
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%4"
+            },
+            {
+                "opcode": "add",
+                "args": [
+                    "%3",
+                    "%4"
+                ],
+                "result": "%2"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%1"
+                ],
+                "result": "%0"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%2"
+                ],
+                "result": "%1"
+            },
+            {
+                "opcode": "copy",
+                "args": [
+                    "%0"
+                ],
+                "result": "%3"
+            },
+            {
+                "opcode": "print",
+                "args": [
+                    "%3"
+                ],
+                "result": null
+            },
+            {
+                "opcode": "nop",
+                "args": [],
+                "result": null
+            }
+        ]
+    }
+]
