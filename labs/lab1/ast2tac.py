@@ -1,3 +1,15 @@
+"""
+Author: Lucien Walewski
+Class: CSE302
+
+Use case: 'python3 ast2tac.py <astfilename>
+
+Remarks:
+    Retrospectivally would have been better to use class
+    hierarchies as would make for more readable, cleaner and 
+    scalable code.
+"""
+
 import json
 import sys
 from os import stat
@@ -10,7 +22,8 @@ UNARY_MAPPINGS = {'UMINUS': 'neg', 'BITCOMPL': 'not'}
 
 
 def generate_code(expr, write, mappings):
-    """Returns a list of instructions"""
+    """Returns a list of instructions, equivalent to 'code(e, x) from
+    lecture slides"""
     global TEMPORARIES, BINARY_MAPPINGS, UNARY_MAPPINGS
     expr = expr[0]  # Ignore location component
     if expr[0] == '<number>':
