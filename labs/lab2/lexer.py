@@ -1,4 +1,14 @@
-# import ply.lex as lex
+"""
+Lexer that takes input file and prints all the tokens
+sequentially.
+
+Usage:
+    python3 lexer.py <filename>
+    
+Returns:
+    Null"""
+
+import sys
 from py.ply import lex
 
 reserved = {'print': 'PRINT',
@@ -23,8 +33,7 @@ tokens = (
     'BITSHL',
     'BITSHR',
     'BITCOMPL',
-    'UMINUS',
-    'EQUAL'
+    'EQUAL',
 
     'SEMICOLON',
     'COLON',
@@ -46,7 +55,6 @@ t_BITXOR = r'\^'
 t_BITSHL = '<<'
 t_BITSHR = '>>'
 t_BITCOMPL = '~'
-t_UMINUS = '-'
 t_EQUAL = '='
 
 t_SEMICOLON = ';'
@@ -67,9 +75,14 @@ def t_IDENT(t):
 
 
 def t_NUMBER(t):
-    r'[1-9][0-9]*'
+    r'\d+'
     t.value = int(t.value)
     return t
+
+
+def t_COMMENT(t):
+    r'//.*\n?'
+    pass
 
 # error handling with t_error()
 
@@ -85,11 +98,19 @@ t_ignore = ' \t\f\v'
 
 
 def t_newline(t):
-    r'\n'
-    t.lexer.lineno += 1
+    r'\n+'
+    t.lexer.lineno += len(t.value)
     # no return, signifying ignore
 
 
-lexer = lex.lex()
 # This will use Python introspection (reflection) to find out all the
 # ‘tokens' and ‘t_stuff' in this module and create a suitable lexer from it
+
+if __name__ == "__main__":
+    lexer = lex.lex()
+    file = sys.argv[1]
+    with open(file, 'r') as fp:
+        lexer.input(fp.read())
+
+    for tok in lexer:
+        print(tok)
