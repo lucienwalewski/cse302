@@ -1,21 +1,44 @@
 import ply.lex as lex
 import re
 
-reserved = {'print': 'PRINT', 'while': 'WHILE'}
+reserved = {'print': 'PRINT',
+            'main': 'MAIN',
+            'def': 'DEF',
+            'var': 'VAR',
+            'int': 'INT'}
 
 # The ‘tokens' tuple must be present and list all the valid tokens
 tokens = (
-    'PLUS', 'MINUS', 'DIV', 'MODULUS', 'SEMICOLON', 'LPAREN', 'RPAREN', 'IDENT',
-    'NUMBER', 'BITOR', 'BITAND', 'BITXOR', 'BITSHL', 'BITSHR', 'BITCOMPL', 'UMINUS'
+    'IDENT',
+    'NUMBER',
+
+    'PLUS',
+    'MINUS',
+    'DIV',
+    'TIMES',
+    'MODULUS',
+    'BITOR',
+    'BITAND',
+    'BITXOR',
+    'BITSHL',
+    'BITSHR',
+    'BITCOMPL',
+    'UMINUS',
+    'EQUAL'
+
+    'SEMICOLON',
+    'COLON',
+    'LPAREN',
+    'RPAREN',
+    'LBRACE',
+    'RBRACE'
 ) + tuple(reserved.values())
 
 # Regexp strings definitions beginning with ‘t_' define simple tokens
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
 t_PLUS = r'\+'
 t_MINUS = '-'
-t_SEMICOLON = ';'
 t_DIV = '/'
+t_TIMES = r'\*'
 t_MODULUS = '%'
 t_BITOR = r'\|'
 t_BITAND = '&'
@@ -24,7 +47,14 @@ t_BITSHL = '<<'
 t_BITSHR = '>>'
 t_BITCOMPL = '~'
 t_UMINUS = '-'
+t_EQUAL = '='
 
+t_SEMICOLON = ';'
+t_COLON = ':'
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+t_LBRACE = '{'
+t_RBRACE = '}'
 
 # Functions beginning with ‘t_' define complex token processing code.
 # The docstrings of the functions contain the regexp that is matched for the token
@@ -51,7 +81,7 @@ def t_error(t):
 
 # characters to ignore
 # t_ignore = ' \t\f\v'
-t_ignore = ' \t\f\v\\'
+t_ignore = ' \t\f\v'
 
 
 def t_newline(t):
