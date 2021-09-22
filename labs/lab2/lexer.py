@@ -1,5 +1,5 @@
-import ply.lex as lex
-import re
+# import ply.lex as lex
+from py.ply import lex
 
 reserved = {'print': 'PRINT',
             'main': 'MAIN',
