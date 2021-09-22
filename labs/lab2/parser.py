@@ -8,7 +8,7 @@ Returns:
 """
 
 from py.ply import yacc
-from lexer import tokens
+from lexer import tokens, lexer
 import bx_ast
 
 precedence = (
@@ -25,7 +25,7 @@ precedence = (
 
 def p_program(p):
     '''program : DEF MAIN LPAREN RPAREN LBRACE stmts_star RBRACE'''
-    p[0] = bx_ast.Program([0] * 6, [], p[6])
+    p[0] = bx_ast.Program([], [], p[6])
 
 
 def p_statements_star(p):
@@ -84,8 +84,7 @@ def p_operators(p):
             | BITCOMPL expr'''
     if len(p) == 4:
         if p[2] == '+':
-            p[0] = bx_ast.OpApp([0, 0, p.lexpos, p.lexpos + 1,
-                                0, 0], 'PLUS', (p[1], p[3]))
+            p[0] = bx_ast.OpApp([0], 'PLUS', (p[1], p[3]))
         elif p[2] == '-':
             p[0] = bx_ast.OpApp([0] * 6, 'MINUS', (p[1], p[3]))
         elif p[2] == '/':
@@ -105,19 +104,18 @@ def p_operators(p):
         elif p[2] == '>>':
             p[0] = bx_ast.OpApp([0] * 6, 'BITSHR', [p[1], p[3]])
     elif len(p) == 3:
-        p[0] = bx_ast.OpApp([], 'BITCOMPL', p[2])
-
+        p[0] = bx_ast.OpApp([], 'BITCOMPL', [p[2]])
 
 
 def p_expr_parens(p):
     '''expr : LPAREN expr RPAREN
-                  | LBRACE expr RBRACE'''
+            | LBRACE expr RBRACE'''
     p[0] = p[2]
 
 
 def p_expr_uminus(p):
     '''expr : MINUS expr %prec UMINUS'''
-    p[0] = - p[2]
+    p[0] = bx_ast.OpApp([], 'UMINUS', [p[2]])
 
 
 # Error rule for syntax errors
@@ -125,4 +123,14 @@ def p_error(p):
     print("Syntax error in input!")
 
 
-parser = yacc.yacc()
+parser_yacc = yacc.yacc()
+
+# while True:
+#     try:
+#         s = input('calc > ')
+#     except EOFError:
+#         break
+#     if not s:
+#         continue
+#     result = parser.parse(s, lexer=lexer)
+#     print(result)

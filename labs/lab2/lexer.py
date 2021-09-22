@@ -40,7 +40,7 @@ tokens = (
     'LPAREN',
     'RPAREN',
     'LBRACE',
-    'RBRACE'
+    'RBRACE' 
 ) + tuple(reserved.values())
 
 # Regexp strings definitions beginning with ‘t_' define simple tokens
@@ -84,8 +84,6 @@ def t_COMMENT(t):
     r'//.*\n?'
     pass
 
-# error handling with t_error()
-
 
 def t_error(t):
     print(f'Illegal character {t.value[0]} on line {t.lexer.lineno}')
@@ -93,7 +91,6 @@ def t_error(t):
 
 
 # characters to ignore
-# t_ignore = ' \t\f\v'
 t_ignore = ' \t\f\v'
 
 
@@ -106,11 +103,12 @@ def t_newline(t):
 # This will use Python introspection (reflection) to find out all the
 # ‘tokens' and ‘t_stuff' in this module and create a suitable lexer from it
 
-if __name__ == "__main__":
-    lexer = lex.lex()
-    file = sys.argv[1]
-    with open(file, 'r') as fp:
-        lexer.input(fp.read())
+lexer = lex.lex()
 
-    for tok in lexer:
-        print(tok)
+# if __name__ == "__main__":
+#     file = sys.argv[1]
+#     with open(file, 'r') as fp:
+#         lexer.input(fp.read())
+
+#     for tok in lexer:
+#         print(tok)
