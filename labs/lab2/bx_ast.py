@@ -121,6 +121,24 @@ class Stmt(Node):
     else:
       return None
 
+class Vardecl(Stmt):
+  '''Variable declarations'''
+
+  def __init__(self, sloc, lhs: Variable, rhs: Expr):
+    '''
+    lhs -- a Variable instance
+    rhs -- an Expr instance
+    '''
+    super().__init__(sloc)
+    self.lhs = lhs
+    self.rhs = rhs
+
+  @property
+  def js_obj(self):
+    return {'tag': 'Vardecl',
+            'lhs': self.lhs.js_obj,
+            'rhs': self.rhs.js_obj}
+
 class Assign(Stmt):
   """Assignments"""
 
@@ -197,5 +215,5 @@ class Program(Node):
   @property
   def js_obj(self):
     return {'tag': 'Program',
-            'vars': self.vars,
+            'vars': self.lvars,
             'stmts': [stmt.js_obj for stmt in self.stmts]}
