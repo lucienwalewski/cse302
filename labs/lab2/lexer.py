@@ -86,18 +86,17 @@ def t_COMMENT(t):
 
 
 def t_error(t):
-    print(f'Illegal character {t.value[0]} on line {t.lexer.lineno}')
+    print(f'Illegal character "{t.value[0]}" on line {t.lexer.lineno}')
     t.lexer.skip(1)  # skip one character
-
-
-# characters to ignore
-t_ignore = ' \t\f\v'
 
 
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
     # no return, signifying ignore
+
+# characters to ignore
+t_ignore = ' \t\f\v'
 
 
 # This will use Python introspection (reflection) to find out all the
