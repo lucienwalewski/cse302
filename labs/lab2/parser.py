@@ -25,7 +25,7 @@ precedence = (
 
 def p_program(p):
     '''program : DEF MAIN LPAREN RPAREN LBRACE stmts_star RBRACE'''
-    p[0] = bx_ast.Program([], [], p[6])
+    p[0] = bx_ast.Program(p.lineno(6), [], p[6])
 
 
 def p_statements_star(p):
@@ -47,27 +47,27 @@ def p_statement(p):
 
 def p_vardecl(p):
     '''vardecl : VAR IDENT EQUAL expr COLON INT SEMICOLON'''
-    p[0] = bx_ast.Assign([0] * 6, p[2], p[4])
+    p[0] = bx_ast.Vardecl(p.lineno(2), bx_ast.Variable(p.lineno(2), p[2]), p[4])
 
 
 def p_assign(p):
     '''assign : IDENT EQUAL expr SEMICOLON'''
-    p[0] = bx_ast.Assign([0]*6, p[1], p[3])
+    p[0] = bx_ast.Assign(p.lineno(3), bx_ast.Variable(p.lineno(1), p[1]), p[3])
 
 
 def p_print(p):
     '''print : PRINT LPAREN expr RPAREN SEMICOLON'''
-    p[0] = bx_ast.Print([0] * 6, p[3])
+    p[0] = bx_ast.Print(p.lineno(3), p[3])
 
 
 def p_expr_ident(p):
     '''expr : IDENT'''
-    p[0] = bx_ast.Variable([0]*6, p[1])
+    p[0] = bx_ast.Variable(p.lineno(1), p[1])
 
 
 def p_expr_number(p):
     '''expr : NUMBER'''
-    p[0] = bx_ast.Number([0] * 6, p[1])
+    p[0] = bx_ast.Number(p.lineno(1), p[1])
 
 
 def p_operators(p):
@@ -84,43 +84,46 @@ def p_operators(p):
             | BITCOMPL expr'''
     if len(p) == 4:
         if p[2] == '+':
-            p[0] = bx_ast.OpApp([0], 'PLUS', (p[1], p[3]))
+            p[0] = bx_ast.OpApp(p.lineno(2), 'PLUS', (p[1], p[3]))
         elif p[2] == '-':
-            p[0] = bx_ast.OpApp([0] * 6, 'MINUS', (p[1], p[3]))
+            p[0] = bx_ast.OpApp(p.lineno(2), 'MINUS', (p[1], p[3]))
         elif p[2] == '/':
-            p[0] = bx_ast.OpApp([0] * 6, 'DIV', (p[1], p[3]))
+            p[0] = bx_ast.OpApp(p.lineno(2), 'DIV', (p[1], p[3]))
         elif p[2] == '*':
-            p[0] = bx_ast.OpApp([0] * 6, 'TIMES', (p[1], p[3]))
+            p[0] = bx_ast.OpApp(p.lineno(2), 'TIMES', (p[1], p[3]))
         elif p[2] == '%':
-            p[0] = bx_ast.OpApp([0] * 6, 'MODULUS', (p[1], p[3]))
+            p[0] = bx_ast.OpApp(p.lineno(2), 'MODULUS', (p[1], p[3]))
         elif p[2] == '|':
-            p[0] = bx_ast.OpApp([0] * 6, 'BITOR', [p[1], p[3]])
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BITOR', [p[1], p[3]])
         elif p[2] == '&':
-            p[0] = bx_ast.OpApp([0] * 6, 'BITAND', [p[1], p[3]])
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BITAND', [p[1], p[3]])
         elif p[2] == '^':
-            p[0] = bx_ast.OpApp([0] * 6, 'BITXOR', [p[1], p[3]])
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BITXOR', [p[1], p[3]])
         elif p[2] == '<<':
-            p[0] = bx_ast.OpApp([0] * 6, 'BITSHL', [p[1], p[3]])
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BITSHL', [p[1], p[3]])
         elif p[2] == '>>':
-            p[0] = bx_ast.OpApp([0] * 6, 'BITSHR', [p[1], p[3]])
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BITSHR', [p[1], p[3]])
     elif len(p) == 3:
-        p[0] = bx_ast.OpApp([], 'BITCOMPL', [p[2]])
+        p[0] = bx_ast.OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
 
 
 def p_expr_parens(p):
-    '''expr : LPAREN expr RPAREN
-            | LBRACE expr RBRACE'''
+    '''expr : LPAREN expr RPAREN'''
     p[0] = p[2]
 
 
 def p_expr_uminus(p):
     '''expr : MINUS expr %prec UMINUS'''
-    p[0] = bx_ast.OpApp([], 'UMINUS', [p[2]])
+    p[0] = bx_ast.OpApp(p.lineno(2), 'UMINUS', [p[2]])
 
 
 # Error rule for syntax errors
 def p_error(p):
-    print("Syntax error in input!")
+    if p is None:
+        print(f"Syntax error!")
+        raise SyntaxError
+    print(f"Syntax error in input at line {p.lineno}")
+    raise SyntaxError
 
 
 parser_yacc = yacc.yacc()
