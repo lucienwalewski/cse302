@@ -71,7 +71,6 @@ def check_print(instruction: Print, filename):
 
 def check_syntax(parse_output, filename):
     '''Checks syntax of parse output and raises error'''
-    assert isinstance(parse_output, Program)
     if not isinstance(parse_output, Program):
         print(f'{filename}:Error:Incorrect main function')
         return True
