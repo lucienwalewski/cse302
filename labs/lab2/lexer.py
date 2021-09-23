@@ -8,7 +8,6 @@ Usage:
 Returns:
     Null"""
 
-import sys
 from py.ply import lex
 
 reserved = {'print': 'PRINT',
@@ -93,7 +92,6 @@ def t_error(t):
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
-    # no return, signifying ignore
 
 # characters to ignore
 t_ignore = ' \t\f\v'
@@ -103,11 +101,3 @@ t_ignore = ' \t\f\v'
 # ‘tokens' and ‘t_stuff' in this module and create a suitable lexer from it
 
 lexer = lex.lex()
-
-# if __name__ == "__main__":
-#     file = sys.argv[1]
-#     with open(file, 'r') as fp:
-#         lexer.input(fp.read())
-
-#     for tok in lexer:
-#         print(tok)
