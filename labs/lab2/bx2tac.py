@@ -1,9 +1,10 @@
-import sys
 import json
-from lexer import lexer
+import sys
 from parser import parser_yacc
-from syntax_checker import check_syntax
+
 from ast2tac import Prog
+from lexer import lexer
+from syntax_checker import check_syntax
 
 if __name__ == '__main__':
     filename = sys.argv[1]

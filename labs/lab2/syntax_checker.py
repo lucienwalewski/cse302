@@ -17,7 +17,6 @@ declarations_line = {}
 def check_variable(expr: Variable, filename: str):
     if expr.name not in declarations:
         print(f'{filename}:line {expr.sloc}:Error:Undeclared variable "{expr.name}"')
-        # sys.exit(1)
         return True
 
 
@@ -25,7 +24,6 @@ def check_number(expr: Number, filename: str):
     if expr.value < 0 or (expr.value >> 63):
         print(
             f'{filename}:line {expr.sloc}:Error:Number "{expr.value}" out of range [0, 2<<63)')
-        # sys.exit(1)
         return True
 
 
@@ -55,7 +53,6 @@ def check_vardecl(instruction: Vardecl, filename):
         print(f'{filename}:line {instruction.sloc}:Error:Duplicate declaration of variable "{instruction.lhs}"')
         print(
             f'{filename}:line {declarations_line[instruction.lhs]}:Info:Earlier declaration of "{instruction.lhs}"')
-        # sys.exit(1)
         return True
 
     declarations.append(instruction.lhs.name)
@@ -63,7 +60,7 @@ def check_vardecl(instruction: Vardecl, filename):
 
 
 def check_assign(instruction: Assign, filename):
-    if check_variable(instruction.lhs, filename) or check_expr(instruction.rhs, filename):
+    if check_variable(instruction.rhs, filename) or check_expr(instruction.lhs, filename):
         return True
 
 
@@ -74,10 +71,8 @@ def check_print(instruction: Print, filename):
 
 def check_syntax(parse_output, filename):
     '''Checks syntax of parse output and raises error'''
-    assert isinstance(parse_output, Program)
     if not isinstance(parse_output, Program):
         print(f'{filename}:Error:Incorrect main function')
-        # sys.exit(1)
         return True
     for instruction in parse_output.stmts:
         if isinstance(instruction, Vardecl):

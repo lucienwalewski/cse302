@@ -8,7 +8,7 @@ Remarks:
     Retrospectivally would have been better to use class
     hierarchies as would make for more readable, cleaner and 
     scalable code.
-"""
+    """
 
 import json
 import sys
@@ -30,12 +30,10 @@ def generate_code(expr, write, mappings):
         instruction = [{'opcode': 'const', 'args': [
             expr[1]], 'result': f'%{write}'}]
         return instruction, mappings
-
     elif expr[0] == '<var>':
         instruction = [{'opcode': 'copy', 'args': [
             f'%{mappings[expr[1]]}'], 'result': f'%{write}'}]
         return instruction, mappings
-
     elif expr[0] == '<unop>':
         op, arg = expr[1][0][0], expr[2]
         new_temp = get_new_temporary()
@@ -44,7 +42,6 @@ def generate_code(expr, write, mappings):
         instructions += [{'opcode': UNARY_MAPPINGS[op],
                           'args': [f'%{new_temp}'], 'result': f'%{write}'}]
         return instructions, mappings
-
     elif expr[0] == '<binop>':
         arg1, op, arg2 = expr[1], expr[2][0][0], expr[3]
         new_temp1 = get_new_temporary()

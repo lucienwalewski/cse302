@@ -47,7 +47,7 @@ def p_statement(p):
 
 def p_vardecl(p):
     '''vardecl : VAR IDENT EQUAL expr COLON INT SEMICOLON'''
-    p[0] = bx_ast.Vardecl(p.lineno(2), bx_ast.Variable(p.lineno(2), p[2]), p[4])
+    p[0] = bx_ast.Vardecl(p.lineno(4), bx_ast.Variable(p.lineno(2), p[2]), p[4])
 
 
 def p_assign(p):
