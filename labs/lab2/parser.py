@@ -127,13 +127,3 @@ def p_error(p):
 
 
 parser_yacc = yacc.yacc()
-
-# while True:
-#     try:
-#         s = input('calc > ')
-#     except EOFError:
-#         break
-#     if not s:
-#         continue
-#     result = parser.parse(s, lexer=lexer)
-#     print(result)
