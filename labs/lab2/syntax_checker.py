@@ -60,7 +60,7 @@ def check_vardecl(instruction: Vardecl, filename):
 
 
 def check_assign(instruction: Assign, filename):
-    if check_variable(instruction.rhs, filename) or check_expr(instruction.lhs, filename):
+    if check_expr(instruction.rhs, filename) or check_expr(instruction.lhs, filename):
         return True
 
 
