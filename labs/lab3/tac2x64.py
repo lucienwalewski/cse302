@@ -79,6 +79,7 @@ def tac_to_asm(tac_instrs):
         opcode = instr['opcode']
         args = instr['args']
         result = instr['result']
+        print(opcode, args, result)
         if opcode == 'nop':
             pass
         elif opcode == 'const':
@@ -95,7 +96,6 @@ def tac_to_asm(tac_instrs):
             jump = jcc[opcode]
             assert len(args) == 2
             arg = lookup_temp(args[0], temp_map)
-            print(args[1][1:])
             label = args[1][1:]
             asm.extend(jump(arg, label))
         elif opcode == 'copy':
@@ -136,6 +136,7 @@ def tac_to_asm(tac_instrs):
                         "popq %rdi"])
         else:
             assert False, f'unknown opcode: {opcode}'
+        print(asm)
     asm[:0] = [f'pushq %rbp',
                f'movq %rsp, %rbp',
                f'subq ${8 * len(temp_map)}, %rsp'] \
@@ -148,7 +149,7 @@ def tac_to_asm(tac_instrs):
 
 
 def compile_tac(fname):
-    assert fname.endswith('.tac')
+    assert fname.endswith('.tac.json')
     tjs = None
     with open(fname, 'rb') as fp:
         tjs = json.load(fp)
@@ -171,6 +172,6 @@ def compile_tac(fname):
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print(f'Usage: {sys.argv[0]} tacfile.json')
+        print(f'Usage: {sys.argv[0]} tacfile.tac.json')
         sys.exit(1)
     compile_tac(sys.argv[1])
