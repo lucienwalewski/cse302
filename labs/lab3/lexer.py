@@ -55,7 +55,8 @@ tokens = (
     'EQUALITY',
     'DISEQUALITY',
     'BOOLAND', 
-    'BOOLOR'
+    'BOOLOR',
+    'BOOLNEG'
 ) + tuple(reserved.values())
 
 # Regexp strings definitions beginning with ‘t_' define simple tokens
@@ -87,6 +88,7 @@ t_EQUALITY = '=='
 t_DISEQUALITY = '!='
 t_BOOLAND = '&&'
 t_BOOLOR = r'\|\|'
+t_BOOLNEG = '!'
 
 # Functions beginning with ‘t_' define complex token processing code.
 # The docstrings of the functions contain the regexp that is matched for the token

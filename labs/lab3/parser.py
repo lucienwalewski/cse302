@@ -24,8 +24,8 @@ precedence = (
 
 
 def p_program(p):
-    '''program : DEF MAIN LPAREN RPAREN LBRACE stmts_star RBRACE'''
-    p[0] = bx_ast.Program(p.lineno(6), [], p[6])
+    '''program : DEF MAIN LPAREN RPAREN block'''
+    p[0] = bx_ast.Program(p.lineno(5), [], p[5])
 
 
 def p_statements_star(p):
@@ -39,26 +39,43 @@ def p_statements_star(p):
 
 
 def p_statement(p):
-    '''stmt : vardecl 
-            | assign
-            | print'''
+    '''stmt : assign 
+            | print
+            | ifelse
+            | while
+            | jump'''
     p[0] = p[1]
-
-
-def p_vardecl(p):
-    '''vardecl : VAR IDENT EQUAL expr COLON INT SEMICOLON'''
-    p[0] = bx_ast.Vardecl(p.lineno(4), bx_ast.Variable(p.lineno(2), p[2]), p[4])
-
 
 def p_assign(p):
     '''assign : IDENT EQUAL expr SEMICOLON'''
     p[0] = bx_ast.Assign(p.lineno(3), bx_ast.Variable(p.lineno(1), p[1]), p[3])
 
-
 def p_print(p):
     '''print : PRINT LPAREN expr RPAREN SEMICOLON'''
     p[0] = bx_ast.Print(p.lineno(3), p[3])
 
+def p_ifelse(p):
+    '''ifelse : IF LPAREN expr RPAREN block ifrest'''
+    pass
+
+def p_ifrest(p):
+    '''ifrest : 
+              | ELSE ifelse
+              | ELSE block'''
+    pass
+
+def p_while(p):
+    '''while : WHILE LPAREN expr RPAREN block'''
+    pass
+
+def p_jump(p):
+    '''jump : BREAK SEMICOLON
+            | CONTINUE SEMICOLON'''
+    pass
+
+def p_block(p):
+    '''block : LBRACE stmts_star RBRACE'''
+    pass
 
 def p_expr_ident(p):
     '''expr : IDENT'''
@@ -68,6 +85,11 @@ def p_expr_ident(p):
 def p_expr_number(p):
     '''expr : NUMBER'''
     p[0] = bx_ast.Number(p.lineno(1), p[1])
+    
+def p_expr_bool(p):
+    '''expr : TRUE
+            | FALSE'''
+    pass
 
 
 def p_operators(p):
@@ -81,7 +103,8 @@ def p_operators(p):
             | expr BITXOR expr
             | expr BITSHL expr
             | expr BITSHR expr
-            | BITCOMPL expr'''
+            | BITCOMPL expr
+            | BOOLNEG expr'''
     if len(p) == 4:
         if p[2] == '+':
             p[0] = bx_ast.OpApp(p.lineno(2), 'PLUS', (p[1], p[3]))
@@ -104,7 +127,11 @@ def p_operators(p):
         elif p[2] == '>>':
             p[0] = bx_ast.OpApp(p.lineno(2), 'BITSHR', [p[1], p[3]])
     elif len(p) == 3:
-        p[0] = bx_ast.OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
+        if p[1] == '~':
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
+        elif p[1] == '!':
+            pass
+        
 
 
 def p_expr_parens(p):
