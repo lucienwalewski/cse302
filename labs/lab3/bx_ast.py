@@ -17,9 +17,46 @@ class Node:
         """
         self.sloc = sloc
 
+
+####################
+# Blocks
+
+
+class Block(Node) :
+    def __init__(self, sloc,lvars, stms):
+        super().__init__(sloc)
+        self.lvars = lvars
+        self.stmts = stmts
+
+    @staticmethod
+    def load(block):
+        """
+        blocks -- list of statements 
+        returns: a Block instance if json is valid, None otherwise
+        """
+        stmts = []
+        lvars = []
+
+
+        block = block[0][1]
+
+        
+        while len(block) > 0:
+            st, block = block[0], block[1:]
+            print("statement",st)
+            if st[0][0] == "<vardecl>" :
+                # store the new variable somewhere
+                pass
+            stmt = Stmt.load(st)
+            assert stmt is not None, st
+            stmts.append(stmt)
+
+
+
+
+
 ####################
 # Expressions
-
 
 class Expr(Node):
     """Superclass of all expressions"""
@@ -149,6 +186,8 @@ class Stmt(Node):
             return None
         sloc = js_obj[1] if len(js_obj) > 1 else None
         js_obj = js_obj[0]
+        if js_obj[0] == '<while>':
+             return While(sloc, Expr.load(js_obj[1]), Block.load(js_obj[2]))
         if js_obj[0] == '<assign>':
             return Assign(sloc, Expr.load(js_obj[1]), Expr.load(js_obj[2]))
         elif js_obj[0] == '<eval>':
@@ -177,6 +216,24 @@ class Vardecl(Stmt):
         return {'tag': 'Vardecl',
                 'lhs': self.lhs.js_obj,
                 'rhs': self.rhs.js_obj}
+
+class While(Stmt):
+    def __init__(self, sloc, condition: Expr, block: Block ):
+        """
+    condition : condition to enter in the block
+    block : list of statements
+        """
+        super().__init__(sloc)
+        self.condition = condition 
+        self.Block = block
+
+    @property
+    def js_obj(self):
+        return {'tag': 'While',
+                'lhs': self.condition.js_obj,
+                'rhs': self.Block.js_obj}
+
+
 
 
 class Assign(Stmt):

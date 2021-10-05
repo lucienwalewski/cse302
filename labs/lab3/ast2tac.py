@@ -161,5 +161,5 @@ def main():
     # if opts.keepgoing:
     #     tac2asm.compile_tac(tacname)
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
