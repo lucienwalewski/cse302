@@ -14,7 +14,14 @@ reserved = {'print': 'PRINT',
             'main': 'MAIN',
             'def': 'DEF',
             'var': 'VAR',
-            'int': 'INT'}
+            'int': 'INT',
+            'if': 'IF', 
+            'else': 'ELSE',
+            'while': 'WHILE',
+            'break': 'BREAK',
+            'continue': 'CONTINUE',
+            'true': 'TRUE',
+            'false': 'FALSE'}
 
 # The ‘tokens' tuple must be present and list all the valid tokens
 tokens = (
@@ -39,7 +46,16 @@ tokens = (
     'LPAREN',
     'RPAREN',
     'LBRACE',
-    'RBRACE' 
+    'RBRACE',
+
+    'LT',
+    'LEQ',
+    'GT',
+    'GEQ',
+    'EQUALITY',
+    'DISEQUALITY',
+    'BOOLAND', 
+    'BOOLOR'
 ) + tuple(reserved.values())
 
 # Regexp strings definitions beginning with ‘t_' define simple tokens
@@ -62,6 +78,15 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_LBRACE = '{'
 t_RBRACE = '}'
+
+t_LT = '<'
+t_LEQ = '<='
+t_GT = '>'
+t_GEQ = '>='
+t_EQUALITY = '=='
+t_DISEQUALITY = '!='
+t_BOOLAND = '&&'
+t_BOOLOR = r'\|\|'
 
 # Functions beginning with ‘t_' define complex token processing code.
 # The docstrings of the functions contain the regexp that is matched for the token
