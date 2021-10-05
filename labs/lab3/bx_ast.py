@@ -26,7 +26,7 @@ class Block(Node) :
     def __init__(self, sloc,lvars, stms):
         super().__init__(sloc)
         self.lvars = lvars
-        self.stmts = stmts
+        self.stmts = stms
 
     @staticmethod
     def load(block):
@@ -37,9 +37,7 @@ class Block(Node) :
         stmts = []
         lvars = []
 
-
         block = block[0][1]
-
         
         while len(block) > 0:
             st, block = block[0], block[1:]
@@ -99,7 +97,6 @@ class Variable(Expr):
     def type_check(self):
         pass
 
-
     @property
     def js_obj(self):
         return {'tag': 'Variable',
@@ -150,7 +147,7 @@ class OpApp(Expr):
             for arg in self.args:
                 assert arg.ty == 'int' 
             self.ty = 'int'
-        elif self.op in {'EQUALS', 'DISEQUAL',
+        elif self.op in {'EQUALITY', 'DISEQUALITY',
                          'LT', 'LEQ' 'GT', 'GEQ', 'BITCOMPL'}:
             for arg in self.args:
                 assert arg.ty == 'int'
