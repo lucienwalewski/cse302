@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import tac2asm
+# import tac2asm
 import json
 import bx_ast as ast
 
@@ -158,8 +158,8 @@ def main():
         raise ValueError('Cannot use both --tmm and --bmm')
     alg = 'tmm' if opts.tmm or not opts.bmm else 'bmm'
     tacname = ast_to_tac_json(opts.fname[0], alg)
-    if opts.keepgoing:
-        tac2asm.compile_tac(tacname)
+    # if opts.keepgoing:
+    #     tac2asm.compile_tac(tacname)
 
 # if __name__ == '__main__':
 #     main()
