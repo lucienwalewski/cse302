@@ -23,10 +23,10 @@ class Node:
 
 
 class Block(Node) :
-    def __init__(self, sloc,lvars, stms):
+    def __init__(self, sloc,lvars, stmts):
         super().__init__(sloc)
         self.lvars = lvars
-        self.stmts = stms
+        self.stmts = stmts
 
     @staticmethod
     def load(block):
@@ -121,6 +121,18 @@ class Number(Expr):
         return {'tag': 'Number',
                 'value': str(self.value)}
 
+class Bool(Expr):
+    '''Boolean true or false'''
+    def __init__(self, sloc, value: bool):
+        super().__init__(sloc)
+        '''
+        value -- bool representing whether the expression is true or false
+        '''
+        self.value = value
+    
+    def type_check(self):
+        self.ty = 'bool'
+
 
 class OpApp(Expr):
     """Operator application"""
@@ -185,7 +197,7 @@ class Stmt(Node):
         js_obj = js_obj[0]
         if js_obj[0] == '<while>':
              return While(sloc, Expr.load(js_obj[1]), Block.load(js_obj[2]))
-        if js_obj[0] == '<assign>':
+        elif js_obj[0] == '<assign>':
             return Assign(sloc, Expr.load(js_obj[1]), Expr.load(js_obj[2]))
         elif js_obj[0] == '<eval>':
             js_obj = js_obj[1][0]
@@ -214,15 +226,38 @@ class Vardecl(Stmt):
                 'lhs': self.lhs.js_obj,
                 'rhs': self.rhs.js_obj}
 
+class IfRest(Stmt):
+    def __init__(self, sloc, args):
+        '''
+        ifelse -- optional ifelse
+        block -- optional Block
+        '''
+        super().__init__(sloc)
+        # FIXME
+
+class IfElse(Stmt):
+    def __init__(self, sloc, condition: Expr, block: Block, ifrest: IfRest):
+        '''
+        condition -- condition to enter the block 
+        block -- list of statements to execute
+        ifrest -- else blocks
+        '''
+        super().__init__(sloc)
+        self.condition = condition
+        self.block = block
+        self.ifrest = ifrest
+
+
+
 class While(Stmt):
-    def __init__(self, sloc, condition: Expr, block: Block ):
-        """
-    condition : condition to enter in the block
-    block : list of statements
-        """
+    def __init__(self, sloc, condition: Expr, block: Block):
+        '''
+        condition -- condition to enter the block
+        block -- list of statements
+        '''
         super().__init__(sloc)
         self.condition = condition 
-        self.Block = block
+        self.block = block
 
     @property
     def js_obj(self):

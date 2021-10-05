@@ -56,13 +56,18 @@ def p_print(p):
 
 def p_ifelse(p):
     '''ifelse : IF LPAREN expr RPAREN block ifrest'''
-    pass
+    p[0] = bx_ast.IfElse(p.lineno(1), bx_ast.Expr(p.lineno(3)), bx_ast.Block(p.lineno(5), [], p[5]), bx_ast.IfRest(p.lineno(6), [], p[6]))
+    # FIXME
 
 def p_ifrest(p):
     '''ifrest : 
               | ELSE ifelse
               | ELSE block'''
-    pass
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[2]
+
 
 def p_while(p):
     '''while : WHILE LPAREN expr RPAREN block'''
