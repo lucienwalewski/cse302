@@ -39,25 +39,35 @@ def p_statements_star(p):
 
 
 def p_statement(p):
-    '''stmt : assign 
+    '''stmt : vardecl
+            | block
+            | assign 
             | print
             | ifelse
             | while
             | jump'''
     p[0] = p[1]
 
+
+def p_vardecl(p):
+    '''vardecl : VAR IDENT EQUAL expr COLON INT SEMICOLON'''
+    p[0] = bx_ast.Vardecl(p.lineno(4), p[2], p[4])
+
+
 def p_assign(p):
     '''assign : IDENT EQUAL expr SEMICOLON'''
-    p[0] = bx_ast.Assign(p.lineno(3), bx_ast.Variable(p.lineno(1), p[1]), p[3])
+    p[0] = bx_ast.Assign(p.lineno(3), p[1], p[3])
+
 
 def p_print(p):
     '''print : PRINT LPAREN expr RPAREN SEMICOLON'''
     p[0] = bx_ast.Print(p.lineno(3), p[3])
 
+
 def p_ifelse(p):
     '''ifelse : IF LPAREN expr RPAREN block ifrest'''
-    p[0] = bx_ast.IfElse(p.lineno(1), bx_ast.Expr(p.lineno(3)), bx_ast.Block(p.lineno(5), [], p[5]), bx_ast.IfRest(p.lineno(6), [], p[6]))
-    # FIXME
+    p[0] = bx_ast.IfElse(p.lineno(1), p[3], p[5], p[6])
+
 
 def p_ifrest(p):
     '''ifrest : 
@@ -71,16 +81,21 @@ def p_ifrest(p):
 
 def p_while(p):
     '''while : WHILE LPAREN expr RPAREN block'''
-    pass
+    p[0] = bx_ast.While(p.lineno(1), p[3], p[5])
+
 
 def p_jump(p):
     '''jump : BREAK SEMICOLON
             | CONTINUE SEMICOLON'''
     pass
+    # FIXME
+
 
 def p_block(p):
     '''block : LBRACE stmts_star RBRACE'''
-    pass
+    p[0] = bx_ast.Block(p.lineno(2), p[2])
+    # FIXME
+
 
 def p_expr_ident(p):
     '''expr : IDENT'''
@@ -90,11 +105,16 @@ def p_expr_ident(p):
 def p_expr_number(p):
     '''expr : NUMBER'''
     p[0] = bx_ast.Number(p.lineno(1), p[1])
-    
-def p_expr_bool(p):
-    '''expr : TRUE
-            | FALSE'''
-    pass
+
+
+def p_expr_true(p):
+    '''expr : TRUE'''
+    p[0] = bx_ast.Bool(p.lineno(1), True)
+
+
+def p_expr_false(p):
+    '''expr : FALSE'''
+    p[0] = bx_ast.Bool(p.lineno(1), False)
 
 
 def p_operators(p):
@@ -136,7 +156,7 @@ def p_operators(p):
             p[0] = bx_ast.OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
         elif p[1] == '!':
             pass
-        
+            # FIXME
 
 
 def p_expr_parens(p):

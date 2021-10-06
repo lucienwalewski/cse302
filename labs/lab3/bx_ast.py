@@ -83,6 +83,9 @@ class Expr(Node):
         else:
             return None
 
+    def type_check(self):
+        pass
+
 
 class Variable(Expr):
     """Program variable"""
