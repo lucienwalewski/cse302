@@ -23,9 +23,8 @@ class Node:
 
 
 class Block(Node) :
-    def __init__(self, sloc,lvars, stmts):
+    def __init__(self, sloc, stmts):
         super().__init__(sloc)
-        self.lvars = lvars
         self.stmts = stmts
 
     @staticmethod
