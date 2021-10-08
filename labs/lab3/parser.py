@@ -2,7 +2,7 @@
 Parser that takes file produced by lexer and produces
 an ast.
 
-Usage:
+Usage: Library
 
 Returns:
 """
@@ -12,13 +12,17 @@ from lexer import tokens, lexer
 import bx_ast
 
 precedence = (
+    ('left', 'BOOLOR'),
+    ('left', 'BOOLAND'),
     ('left', 'BITOR'),
     ('left', 'BITXOR'),
     ('left', 'BITAND'),
+    ('left', 'EQUALITY', 'DISEQUALITY'), 
+    ('left', 'LT', 'LEQ', 'GT', 'GEQ'),
     ('left', 'BITSHL', 'BITSHR'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIV', 'MODULUS'),
-    ('right', 'UMINUS'),
+    ('right', 'UMINUS', 'BOOLNEG'),
     ('right', 'BITCOMPL')
 )
 
@@ -74,6 +78,7 @@ def p_ifrest(p):
               | ELSE ifelse
               | ELSE block'''
     if len(p) == 1:
+        # Empty block
         p[0] = []
     else:
         p[0] = p[2]
