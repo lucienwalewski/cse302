@@ -22,34 +22,10 @@ class Node:
 # Blocks
 
 
-class Block(Node) :
+class Block(Node):
     def __init__(self, sloc, stmts):
         super().__init__(sloc)
         self.stmts = stmts
-
-    @staticmethod
-    def load(block):
-        """
-        blocks -- list of statements 
-        returns: a Block instance if json is valid, None otherwise
-        """
-        stmts = []
-        lvars = []
-
-        block = block[0][1]
-        
-        while len(block) > 0:
-            st, block = block[0], block[1:]
-            print("statement",st)
-            if st[0][0] == "<vardecl>" :
-                # store the new variable somewhere
-                pass
-            stmt = Stmt.load(st)
-            assert stmt is not None, st
-            stmts.append(stmt)
-
-
-
 
 
 ####################
@@ -61,29 +37,9 @@ class Expr(Node):
     def __init__(self, sloc):
         super().__init__(sloc)
 
-    @staticmethod
-    def load(js_obj):
-        """
-        js_obj -- data produced by json.load()
-        returns: an Expr instance if json is valid, None otherwise
-        """
-        if not isinstance(js_obj, list):
-            return None
-        sloc = js_obj[1] if len(js_obj) > 1 else None
-        js_obj = js_obj[0]
-        if js_obj[0] == '<var>':
-            return Variable(sloc, js_obj[1])
-        elif js_obj[0] == '<number>':
-            return Number(sloc, js_obj[1])
-        elif js_obj[0] == '<binop>':
-            return OpApp(sloc, js_obj[2][0][0], [Expr.load(js_obj[1]), Expr.load(js_obj[3])])
-        elif js_obj[0] == '<unop>':
-            return OpApp(sloc, js_obj[1][0][0], [Expr.load(js_obj[2])])
-        else:
-            return None
-
     def type_check(self):
         pass
+        # FIXME
 
 
 class Variable(Expr):
@@ -114,7 +70,7 @@ class Number(Expr):
         """
         super().__init__(sloc)
         self.value = value
-    
+
     def type_check(self):
         self.ty = 'int'
 
@@ -123,15 +79,17 @@ class Number(Expr):
         return {'tag': 'Number',
                 'value': str(self.value)}
 
+
 class Bool(Expr):
     '''Boolean true or false'''
+
     def __init__(self, sloc, value: bool):
         super().__init__(sloc)
         '''
         value -- bool representing whether the expression is true or false
         '''
         self.value = value
-    
+
     def type_check(self):
         self.ty = 'bool'
 
@@ -156,10 +114,10 @@ class OpApp(Expr):
             arg.type_check(_)
 
         if self.op in {'PLUS', 'MINUS', 'TIMES', 'DIV',
-                         'MODULUS', 'BITAND', 'BITOR', 'BITXOR',
-                         'BITSHL', 'BITSHR', 'UMINUS', 'NEG'}:
+                       'MODULUS', 'BITAND', 'BITOR', 'BITXOR',
+                       'BITSHL', 'BITSHR', 'UMINUS', 'NEG'}:
             for arg in self.args:
-                assert arg.ty == 'int' 
+                assert arg.ty == 'int'
             self.ty = 'int'
         elif self.op in {'EQUALITY', 'DISEQUALITY',
                          'LT', 'LEQ' 'GT', 'GEQ', 'BITCOMPL'}:
@@ -187,26 +145,6 @@ class Stmt(Node):
     def __init__(self, sloc):
         super().__init__(sloc)
 
-    @staticmethod
-    def load(js_obj):
-        """
-        js_obj -- data produced by json.load()
-        returns: a Stmt instance if json is valid, None otherwise
-        """
-        if not isinstance(js_obj, list):
-            return None
-        sloc = js_obj[1] if len(js_obj) > 1 else None
-        js_obj = js_obj[0]
-        if js_obj[0] == '<while>':
-             return While(sloc, Expr.load(js_obj[1]), Block.load(js_obj[2]))
-        elif js_obj[0] == '<assign>':
-            return Assign(sloc, Expr.load(js_obj[1]), Expr.load(js_obj[2]))
-        elif js_obj[0] == '<eval>':
-            js_obj = js_obj[1][0]
-            return Print(sloc, Expr.load(js_obj[2][0]))
-        else:
-            return None
-
 
 class Vardecl(Stmt):
     '''Variable declarations'''
@@ -228,6 +166,7 @@ class Vardecl(Stmt):
                 'lhs': self.lhs.js_obj,
                 'rhs': self.rhs.js_obj}
 
+
 class IfRest(Stmt):
     def __init__(self, sloc, args):
         '''
@@ -236,6 +175,7 @@ class IfRest(Stmt):
         '''
         super().__init__(sloc)
         # FIXME
+
 
 class IfElse(Stmt):
     def __init__(self, sloc, condition: Expr, block: Block, ifrest: IfRest):
@@ -250,7 +190,6 @@ class IfElse(Stmt):
         self.ifrest = ifrest
 
 
-
 class While(Stmt):
     def __init__(self, sloc, condition: Expr, block: Block):
         '''
@@ -258,7 +197,7 @@ class While(Stmt):
         block -- list of statements
         '''
         super().__init__(sloc)
-        self.condition = condition 
+        self.condition = condition
         self.block = block
 
     @property
@@ -266,8 +205,6 @@ class While(Stmt):
         return {'tag': 'While',
                 'lhs': self.condition.js_obj,
                 'rhs': self.Block.js_obj}
-
-
 
 
 class Assign(Stmt):
@@ -312,39 +249,6 @@ class Program(Node):
         super().__init__(sloc)
         self.lvars = lvars
         self.stmts = stmts
-
-    @staticmethod
-    def load(js_obj):
-        assert isinstance(js_obj, list)
-        sloc = js_obj[1] if len(js_obj) > 1 else None
-        js_obj = js_obj[0]
-        assert isinstance(js_obj, list)
-        assert len(js_obj) == 1
-        js_obj = js_obj[0][0]
-        assert len(js_obj[2]) == 0  # type of args
-        block = js_obj[4][0][1][:]
-        # load the variables
-        lvars = []
-        while len(block) > 0:
-            if block[0][0][0] != '<vardecl>':
-                break
-            var, block = block[0][0], block[1:]
-            lvars.append(var[1][0])
-        # load the statements
-        stmts = []
-        while len(block) > 0:
-            st, block = block[0], block[1:]
-            stmt = Stmt.load(st)
-            assert stmt is not None, st
-            stmts.append(stmt)
-        return Program(sloc, lvars, stmts)
-
-    # @staticmethod
-    # def load(fname):
-    #   with open(fname, 'rb') as fp:
-    #     js_obj = json.load(fp)
-    #     assert 'ast' in js_obj, js_obj
-    #     return Program(js_obj['ast'])
 
     @property
     def js_obj(self):
