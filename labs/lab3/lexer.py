@@ -15,7 +15,7 @@ reserved = {'print': 'PRINT',
             'def': 'DEF',
             'var': 'VAR',
             'int': 'INT',
-            'if': 'IF', 
+            'if': 'IF',
             'else': 'ELSE',
             'while': 'WHILE',
             'break': 'BREAK',
@@ -54,7 +54,7 @@ tokens = (
     'GEQ',
     'EQUALITY',
     'DISEQUALITY',
-    'BOOLAND', 
+    'BOOLAND',
     'BOOLOR',
     'BOOLNEG'
 ) + tuple(reserved.values())
@@ -71,7 +71,6 @@ t_BITXOR = r'\^'
 t_BITSHL = '<<'
 t_BITSHR = '>>'
 t_BITCOMPL = '~'
-t_EQUAL = '='
 
 t_SEMICOLON = ';'
 t_COLON = ':'
@@ -89,6 +88,8 @@ t_DISEQUALITY = '!='
 t_BOOLAND = '&&'
 t_BOOLOR = r'\|\|'
 t_BOOLNEG = '!'
+
+t_EQUAL = '='
 
 # Functions beginning with ‘t_' define complex token processing code.
 # The docstrings of the functions contain the regexp that is matched for the token
@@ -119,6 +120,7 @@ def t_error(t):
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
+
 
 # characters to ignore
 t_ignore = ' \t\f\v'

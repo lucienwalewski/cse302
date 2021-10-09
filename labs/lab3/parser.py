@@ -17,7 +17,7 @@ precedence = (
     ('left', 'BITOR'),
     ('left', 'BITXOR'),
     ('left', 'BITAND'),
-    ('left', 'EQUALITY', 'DISEQUALITY'), 
+    ('left', 'EQUALITY', 'DISEQUALITY'),
     ('left', 'LT', 'LEQ', 'GT', 'GEQ'),
     ('left', 'BITSHL', 'BITSHR'),
     ('left', 'PLUS', 'MINUS'),
@@ -78,8 +78,7 @@ def p_ifrest(p):
               | ELSE ifelse
               | ELSE block'''
     if len(p) == 1:
-        # Empty block
-        p[0] = []
+        p[0] = bx_ast.Block(p.lineno(0), [])
     else:
         p[0] = p[2]
 
@@ -92,14 +91,12 @@ def p_while(p):
 def p_jump(p):
     '''jump : BREAK SEMICOLON
             | CONTINUE SEMICOLON'''
-    pass
-    # FIXME
+    p[0] = bx_ast.Jump(p.lineno(1), p[1])
 
 
 def p_block(p):
     '''block : LBRACE stmts_star RBRACE'''
     p[0] = bx_ast.Block(p.lineno(2), p[2])
-    # FIXME
 
 
 def p_expr_ident(p):
@@ -160,8 +157,7 @@ def p_operators(p):
         if p[1] == '~':
             p[0] = bx_ast.OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
         elif p[1] == '!':
-            pass
-            # FIXME
+            p[0] = bx_ast.OpApp(p.lineno(2), 'BOOLNEG', p[2])
 
 
 def p_expr_parens(p):
