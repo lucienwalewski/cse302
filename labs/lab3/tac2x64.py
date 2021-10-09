@@ -10,6 +10,9 @@ Requires: a working gcc
 """
 
 import json
+# from labs.lab2.ast2tac import Instr
+from ast2tac import Instr
+from typing import List
 import sys
 import os
 
@@ -76,10 +79,9 @@ def tac_to_asm(tac_instrs):
     temp_map = dict()
     asm = []
     for instr in tac_instrs:
-        opcode = instr['opcode']
-        args = instr['args']
-        result = instr['result']
-        print(opcode, args, result)
+        opcode = instr.opcode
+        args = instr.args
+        result = instr.result
         if opcode == 'nop':
             pass
         elif opcode == 'const':
@@ -147,8 +149,25 @@ def tac_to_asm(tac_instrs):
                 f'retq'])
     return asm
 
+def compile_tac(tac: List[Instr], fname):
+    assert isinstance(tac, list) and len(tac) == 1, tac
+    tac = tac[0]
+    assert 'proc' in tac and tac['proc'] == '@main', tac
+    asm = ['\t' + line for line in tac_to_asm(tac['body'])]
+    asm[:0] = [f'\t.section .rodata',
+               f'.lprintfmt:',
+               f'\t.string "%ld\\n"',
+               f'\t.text',
+               f'\t.globl main',
+               f'main:']
+    xname = fname[:-5] + '.exe'
+    sname = fname[:-5] + '.s'
+    with open(sname, 'w') as afp:
+        print(*asm, file=afp, sep='\n')
+    print(f'{fname} -> {sname}')
 
-def compile_tac(fname):
+
+def compile_tac_from_json(fname):
     assert fname.endswith('.tac.json')
     tjs = None
     with open(fname, 'rb') as fp:
@@ -170,8 +189,8 @@ def compile_tac(fname):
     print(f'{fname} -> {sname}')
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print(f'Usage: {sys.argv[0]} tacfile.tac.json')
-        sys.exit(1)
-    compile_tac(sys.argv[1])
+# if __name__ == '__main__':
+#     if len(sys.argv) != 2:
+#         print(f'Usage: {sys.argv[0]} tacfile.tac.json')
+#         sys.exit(1)
+#     compile_tac(sys.argv[1])

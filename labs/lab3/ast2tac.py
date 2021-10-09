@@ -1,5 +1,7 @@
-from bx_ast import *
+import json
 from collections import deque
+
+from bx_ast import *
 
 opcode_map = {
     'PLUS': 'add', 'MINUS': 'sub', 'TIMES': 'mul', 'DIV': 'div',
@@ -32,7 +34,7 @@ class Instr:
 
 
 class Prog():
-    def __init__(self, ast_prog: Program, alg):
+    def __init__(self, ast_prog: Program, alg = 'tmm'):
         self.localtemps = []
         self.instrs = []
         self.__tempmap = dict()
@@ -42,36 +44,42 @@ class Prog():
         self._continue_stack = deque()
         for v in ast_prog.lvars:
             self._emit('const', [0], self._lookup(v))
-        for stmt in ast_prog.stmts:
-            self.tmm_stmt(stmt)
+        self.tmm_stmt(ast_prog.block)
 
     @property
     def js_obj(self):
+        '''Return json file for Prog'''
         return [{'proc': '@main',
                  'body': [i.js_obj for i in self.instrs]}]
 
-    def _fresh(self):
+    def _fresh(self) -> int:
+        '''Obtain fresh temporary'''
         self.__last += 1
         t = f'%{self.__last}'
         self.localtemps.append(t)
         return t
 
-    def _fresh_label(self):
+    def _fresh_label(self) -> int:
+        '''Obtain fresh label'''
         self.__last_label += 1
         t = f'L{self.__last_label}'
         return t
 
-    def _lookup(self, var):
+    def _lookup(self, var: str) -> int:
+        '''Lookup temporary assigned to variable'''
         t = self.__tempmap.get(var)
         if t is None:
             t = self._fresh()
             self.__tempmap[var] = t
         return t
 
-    def _emit(self, opcode, args, result):
+    def _emit(self, opcode, args, result) -> None:
+        '''Append instruction to list of instructions'''
         self.instrs.append(Instr(opcode, args, result))
 
-    def tmm_int_expr(self, expr: Expr, target):
+    def tmm_int_expr(self, expr: Expr, target) -> None:
+        '''Emit code to evaluate 'expr', 
+        storing the result in target'''
         if isinstance(expr, Number):
             self._emit('const', [expr.value], target)
         elif isinstance(expr, Variable):
@@ -88,7 +96,7 @@ class Prog():
             raise ValueError(
                 f'tmm_expr: unknown expr kind {expr.__class__}')
 
-    def tmm_bool_expr(self, bexpr: Expr, Lt, Lf):
+    def tmm_bool_expr(self, bexpr: Expr, Lt, Lf) -> None:
         '''Emit code to evaluate 'bexpr', 
         jumping to 'Lt' if true and 'Lf'
         if false.'''
@@ -118,7 +126,8 @@ class Prog():
             raise ValueError(
                 f'tmm_expr: unknown expr kind: {bexpr.__class__}')
 
-    def tmm_stmt(self, stmt: Stmt):
+    def tmm_stmt(self, stmt: Stmt) -> None:
+        '''Emit code to evaluate a statement'''
         if isinstance(stmt, Assign) or isinstance(stmt, Vardecl):
             target = self._lookup(stmt.var.name)
             self.tmm_int_expr(stmt.expr, target)
@@ -157,17 +166,21 @@ class Prog():
         else:
             raise ValueError(f'tmm_stmt: unknown stmt kind: {stmt.__class__}')
 
+    def get_instructions(self):
+        return self.instrs
 
-def ast2tac(ast):
-    assert ast['tag'] == 'Program'
-    tac = []
-    _break_stack = []
-    _continue_stack = []
 
-    for stmt in ast['stmts']:
-        if stmt['tag'] == 'Variable':
-            tac.append({})
-
+def ast_to_tac_json(fname, alg):
+    assert fname.endswith('.json')
+    with open(fname, 'rb') as fp:
+        js_obj = json.load(fp)
+        ast_prog = ast.Program.load(js_obj['ast'])
+    tac_prog = Prog(ast_prog, alg)
+    tacname = fname[:-4] + 'tac.json'
+    with open(tacname, 'w') as fp:
+        json.dump(tac_prog.js_obj, fp)
+    print(f'{fname} -> {tacname}')
+    return tacname
 
 # #!/usr/bin/env python3
 

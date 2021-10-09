@@ -15,6 +15,7 @@ from typing import Type
 
 class Node:
     """Superclass of all AST nodes"""
+    vardecls = {}
 
     def __init__(self, sloc):
         """
@@ -72,11 +73,12 @@ class Expr(Node):
 class Variable(Expr):
     """Program variable"""
 
-    def __init__(self, sloc, name: str, type=None):
+    def __init__(self, sloc, name: str, type: str):
         """
         name -- string representation of the name of the variable
         """
         super().__init__(sloc)
+        # assert name in self.vardecls
         self.name = name
         self.ty = type
 
@@ -153,7 +155,7 @@ class OpApp(Expr):
                        } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'int'
         elif self.op in {'EQUALITY', 'DISEQUALITY',
-                         'LT', 'LEQ' 'GT', 'GEQ', 'BITCOMPL'
+                         'LT', 'LEQ', 'GT', 'GEQ', 'BITCOMPL'
                          } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'bool'
         elif self.op in {'BOOLAND', 'BOOLOR', 'NOT'
@@ -161,7 +163,7 @@ class OpApp(Expr):
             self.ty = 'bool'
         else:
             raise TypeError(
-                f'Operation {self.op} not defined for arguments {self.args} with types {tuple([self.arg.ty for arg in self.args])}')
+                f'Operation {self.op} not defined for arguments {self.args} with types {tuple([arg.ty for arg in self.args])}')
 
     @property
     def js_obj(self):
@@ -258,7 +260,7 @@ class Jump(Stmt):
         super().__init__(sloc)
         self.op = op
 
-    def type_check(var_tys):
+    def type_check(self, var_tys):
         pass
 
     @property
@@ -279,11 +281,11 @@ class Assign(Stmt):
         self.expr = expr
 
     def type_check(self, var_tys):
-        var_type = self.find_variable_type(self.var, var_tys)
+        var_type = self.find_variable_type(self.var.name, var_tys)
         self.expr.type_check(var_tys)
         if var_type != self.expr.ty:
             raise TypeError(
-                f'Assignment of variable {self.var.name} of type {self.var.ty} to expr of type {self.expr.ty}')
+                f"Assignment of variable '{self.var.name}' of type '{var_type}' to expr of type '{self.expr.ty}'")
 
     @property
     def js_obj(self):
@@ -293,17 +295,17 @@ class Assign(Stmt):
 
 
 class Print(Stmt):
-    def __init__(self, sloc, arg: Expr):
+    def __init__(self, sloc, expr: Expr):
         """
-        arg -- an Expr instance
+        expr -- an Expr instance
         """
         super().__init__(sloc)
-        self.arg = arg
+        self.expr = expr
 
     def type_check(self, var_tys):
-        self.arg.type_check()
-        if self.arg.ty != 'int':
-            raise TypeError(f'Cannot print expr of type {self.arg.ty}')
+        self.expr.type_check(var_tys)
+        if self.expr.ty != 'int':
+            raise TypeError(f'Cannot print expr of type {self.expr.ty}')
 
     @property
     def js_obj(self):
@@ -317,6 +319,8 @@ class Program(Node):
     def __init__(self, sloc, lvars: list, block: Block):
         super().__init__(sloc)
         self.block = block
+        self.lvars = lvars
+        self.type_check([])
 
     def type_check(self, var_tys):
         self.block.type_check(var_tys)
