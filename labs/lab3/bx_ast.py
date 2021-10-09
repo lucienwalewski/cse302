@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
+from typing import Union, List
+
 """
 A class hierarchy for the AST of the BX language.
 """
 
 ####################
 # Nodes
+
+
+from typing import Type
 
 
 class Node:
@@ -18,14 +23,40 @@ class Node:
         self.sloc = sloc
 
 
+class Stmt(Node):
+    """Superclass of all statements"""
+
+    def __init__(self, sloc):
+        super().__init__(sloc)
+
+    def type_check(self, var_tys):
+        pass
+
+    def find_variable_type(self, var, var_tys) -> str:
+        for scope in reversed(var_tys):
+            if var in scope:
+                return scope[var]
+        return ValueError(f'Variable {var} not in scope')
+
+
 ####################
 # Blocks
 
-
-class Block(Node):
-    def __init__(self, sloc, stmts):
+class Block(Stmt):
+    def __init__(self, sloc, stmts: List[Stmt]):
         super().__init__(sloc)
         self.stmts = stmts
+
+    def type_check(self, var_tys):
+        var_tys.append(dict())
+        for stmt in self.stmts:
+            stmt.type_check(var_tys)
+        var_tys = var_tys[:-1]
+
+    @property
+    def js_obj(self):
+        return {'tag': 'Block',
+                'stmts': [stmt.js_obj for stmt in self.stmts]}
 
 
 ####################
@@ -37,27 +68,25 @@ class Expr(Node):
     def __init__(self, sloc):
         super().__init__(sloc)
 
-    def type_check(self):
-        pass
-        # FIXME
-
 
 class Variable(Expr):
     """Program variable"""
 
-    def __init__(self, sloc, name: str):
+    def __init__(self, sloc, name: str, type=None):
         """
         name -- string representation of the name of the variable
         """
         super().__init__(sloc)
         self.name = name
+        self.ty = type
 
-    def type_check(self):
+    def type_check(self, var_tys):
         pass
 
     @property
     def js_obj(self):
         return {'tag': 'Variable',
+                'type': self.ty,
                 'name': self.name}
 
 
@@ -70,9 +99,10 @@ class Number(Expr):
         """
         super().__init__(sloc)
         self.value = value
-
-    def type_check(self):
         self.ty = 'int'
+
+    def type_check(self, var_tys):
+        pass
 
     @property
     def js_obj(self):
@@ -89,9 +119,15 @@ class Bool(Expr):
         value -- bool representing whether the expression is true or false
         '''
         self.value = value
-
-    def type_check(self):
         self.ty = 'bool'
+
+    def type_check(self, var_tys):
+        pass
+
+    @property
+    def js_obj(self):
+        return {'tag': 'Bool',
+                'value': 1 if self.value else 0}
 
 
 class OpApp(Expr):
@@ -105,29 +141,27 @@ class OpApp(Expr):
         super().__init__(sloc)
         assert isinstance(op, str), op
         self.op = op
-        for arg in args:
-            assert isinstance(arg, Expr), arg.__class__
         self.args = tuple(args)     # make container class explicitly a tuple
 
-    def type_check(self, _):
+    def type_check(self, var_tys):
         for arg in self.args:
-            arg.type_check(_)
+            arg.type_check(var_tys)
 
         if self.op in {'PLUS', 'MINUS', 'TIMES', 'DIV',
                        'MODULUS', 'BITAND', 'BITOR', 'BITXOR',
-                       'BITSHL', 'BITSHR', 'UMINUS', 'NEG'}:
-            for arg in self.args:
-                assert arg.ty == 'int'
+                       'BITSHL', 'BITSHR', 'UMINUS', 'NEG'
+                       } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'int'
         elif self.op in {'EQUALITY', 'DISEQUALITY',
-                         'LT', 'LEQ' 'GT', 'GEQ', 'BITCOMPL'}:
-            for arg in self.args:
-                assert arg.ty == 'int'
+                         'LT', 'LEQ' 'GT', 'GEQ', 'BITCOMPL'
+                         } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'bool'
-        elif self.op in {'BOOLAND', 'BOOLOR', 'NOT'}:
-            for arg in self.args:
-                assert arg.ty == 'bool'
+        elif self.op in {'BOOLAND', 'BOOLOR', 'NOT'
+                         } and all([arg.ty == 'bool' for arg in self.args]):
             self.ty = 'bool'
+        else:
+            raise TypeError(
+                f'Operation {self.op} not defined for arguments {self.args} with types {tuple([self.arg.ty for arg in self.args])}')
 
     @property
     def js_obj(self):
@@ -139,55 +173,60 @@ class OpApp(Expr):
 # Statements
 
 
-class Stmt(Node):
-    """Superclass of all statements"""
-
-    def __init__(self, sloc):
-        super().__init__(sloc)
-
-
 class Vardecl(Stmt):
     '''Variable declarations'''
 
-    def __init__(self, sloc, lhs: Variable, rhs: Expr):
+    def __init__(self, sloc, var: Variable, expr: Expr):
         '''
-        lhs -- a Variable instance
-        rhs -- an Expr instance
+        var -- a Variable instance
+        expr -- an Expr instance
         '''
         super().__init__(sloc)
-        self.lhs = lhs
-        self.rhs = rhs
-        self.rhs.type_check()
-        self.lhs.ty = self.rhs.ty
+        self.var = var
+        self.expr = expr
+
+    def type_check(self, var_tys):
+        if self.var.name in var_tys[-1]:
+            raise ValueError(
+                f'Variable {self.var.name} already declared in same scope')
+        self.expr.type_check(var_tys)
+        self.var.ty = self.expr.ty
+        var_tys[-1][self.var.name] = self.var.ty
 
     @property
     def js_obj(self):
         return {'tag': 'Vardecl',
-                'lhs': self.lhs.js_obj,
-                'rhs': self.rhs.js_obj}
-
-
-class IfRest(Stmt):
-    def __init__(self, sloc, args):
-        '''
-        ifelse -- optional ifelse
-        block -- optional Block
-        '''
-        super().__init__(sloc)
-        # FIXME
+                'lhs': self.var.js_obj,
+                'rhs': self.expr.js_obj}
 
 
 class IfElse(Stmt):
-    def __init__(self, sloc, condition: Expr, block: Block, ifrest: IfRest):
+    def __init__(self, sloc, condition: Expr, block: Block, ifrest):
         '''
         condition -- condition to enter the block 
         block -- list of statements to execute
-        ifrest -- else blocks
+        ifrest -- else blocks of type Block or IfElse
         '''
         super().__init__(sloc)
+        assert isinstance(ifrest, (Block, IfElse))
         self.condition = condition
         self.block = block
         self.ifrest = ifrest
+
+    def type_check(self, var_tys):
+        self.condition.type_check(var_tys)
+        if self.condition.ty != 'bool':
+            raise TypeError(
+                f'IfElse condition must be of type bool (cannot be of type {self.condition.ty}')
+        self.block.type_check(var_tys)
+        self.ifrest.type_check(var_tys)
+
+    @property
+    def js_obj(self):
+        return {'tag': 'IfElse',
+                'condition': self.condition.js_obj,
+                'block': self.block.js_obj,
+                'ifrest': self.ifrest.js_obj}
 
 
 class While(Stmt):
@@ -200,24 +239,51 @@ class While(Stmt):
         self.condition = condition
         self.block = block
 
+    def type_check(self, var_tys):
+        self.condition.type_check(var_tys)
+        if self.condition.ty != 'bool':
+            raise TypeError(
+                f'While condition must be of type bool (cannot be of type {self.condition.ty}')
+        self.block.type_check(var_tys)
+
     @property
     def js_obj(self):
         return {'tag': 'While',
-                'lhs': self.condition.js_obj,
-                'rhs': self.Block.js_obj}
+                'condition': self.condition.js_obj,
+                'stmts': self.block.js_obj}
+
+
+class Jump(Stmt):
+    def __init__(self, sloc, op: str):
+        super().__init__(sloc)
+        self.op = op
+
+    def type_check(var_tys):
+        pass
+
+    @property
+    def js_obj(self):
+        return {'tag': self.op.capitalize()}
 
 
 class Assign(Stmt):
     """Assignments"""
 
-    def __init__(self, sloc, lhs: Variable, rhs: Expr):
+    def __init__(self, sloc, var: Variable, expr: Expr):
         """
-        lhs -- a Variable instance
-        rhs -- an Expr instance
+        var -- a Variable instance
+        expr -- an Expr instance
         """
         super().__init__(sloc)
-        self.lhs = lhs
-        self.rhs = rhs
+        self.var = var
+        self.expr = expr
+
+    def type_check(self, var_tys):
+        var_type = self.find_variable_type(self.var, var_tys)
+        self.expr.type_check(var_tys)
+        if var_type != self.expr.ty:
+            raise TypeError(
+                f'Assignment of variable {self.var.name} of type {self.var.ty} to expr of type {self.expr.ty}')
 
     @property
     def js_obj(self):
@@ -232,8 +298,12 @@ class Print(Stmt):
         arg -- an Expr instance
         """
         super().__init__(sloc)
-        assert isinstance(arg, Expr)
         self.arg = arg
+
+    def type_check(self, var_tys):
+        self.arg.type_check()
+        if self.arg.ty != 'int':
+            raise TypeError(f'Cannot print expr of type {self.arg.ty}')
 
     @property
     def js_obj(self):
@@ -243,15 +313,16 @@ class Print(Stmt):
 ####################
 # Programs
 
-
 class Program(Node):
-    def __init__(self, sloc, lvars, stmts):
+    def __init__(self, sloc, lvars: list, block: Block):
         super().__init__(sloc)
-        self.lvars = lvars
-        self.stmts = stmts
+        self.block = block
+
+    def type_check(self, var_tys):
+        self.block.type_check(var_tys)
 
     @property
     def js_obj(self):
         return {'tag': 'Program',
                 'vars': self.lvars,
-                'stmts': [stmt.js_obj for stmt in self.stmts]}
+                'block': self.block.js_obj}
