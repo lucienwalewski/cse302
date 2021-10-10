@@ -1,5 +1,7 @@
 // both sides of an assignment must have the same type
+// other comment
 def main() {
+  print(1);
   var x = 0 : int;
   x = true;
 }

@@ -169,7 +169,7 @@ class Prog():
         elif isinstance(stmt, Jump):
             if stmt.op == 'break':
                 if len(self._break_stack) < 1:
-                    raise ValueError(f'Bad break')
+                    raise ValueError(f'Bad break at line {stmt.sloc}')
                 self._emit('jmp', [self._break_stack[-1]], None)
             elif stmt.op == 'continue':
                 if len(self._continue_stack) < 1:

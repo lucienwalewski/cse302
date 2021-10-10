@@ -55,22 +55,32 @@ def p_statement(p):
 
 def p_vardecl(p):
     '''vardecl : VAR IDENT EQUAL expr COLON INT SEMICOLON'''
-    p[0] = Vardecl(p.lineno(4), Variable(p.lineno(2), p[2], 'int'), p[4])
+    p[0] = Vardecl(p.lineno(3), Variable(p.lineno(2), p[2], 'int'), p[4])
 
 
 def p_assign(p):
     '''assign : IDENT EQUAL expr SEMICOLON'''
-    p[0] = Assign(p.lineno(3), Variable(p.lineno(1), p[1], 'int'), p[3])
+    p[0] = Assign(p.lineno(1), Variable(p.lineno(1), p[1], 'int'), p[3])
+
+
+
+
 
 
 def p_print(p):
     '''print : PRINT LPAREN expr RPAREN SEMICOLON'''
-    p[0] = Print(p.lineno(3), p[3])
+    p[0] = Print(p.lineno(1), p[3])
+
+
+
+
 
 
 def p_ifelse(p):
     '''ifelse : IF LPAREN expr RPAREN block ifrest'''
     p[0] = IfElse(p.lineno(1), p[3], p[5], p[6])
+
+
 
 
 def p_ifrest(p):
@@ -81,6 +91,7 @@ def p_ifrest(p):
         p[0] = Block(p.lineno(0), [])
     else:
         p[0] = p[2]
+    
 
 
 def p_while(p):
@@ -94,9 +105,11 @@ def p_jump(p):
     p[0] = Jump(p.lineno(1), p[1])
 
 
+
 def p_block(p):
     '''block : LBRACE stmts_star RBRACE'''
     p[0] = Block(p.lineno(2), p[2])
+
 
 
 def p_expr_ident(p):
@@ -104,9 +117,11 @@ def p_expr_ident(p):
     p[0] = Variable(p.lineno(1), p[1], 'int')
 
 
+
 def p_expr_number(p):
     '''expr : NUMBER'''
     p[0] = Number(p.lineno(1), p[1])
+
 
 
 def p_expr_true(p):
@@ -117,6 +132,7 @@ def p_expr_true(p):
 def p_expr_false(p):
     '''expr : FALSE'''
     p[0] = Bool(p.lineno(1), False)
+
 
 
 def p_operators(p):
@@ -192,12 +208,13 @@ def p_expr_parens(p):
 def p_expr_uminus(p):
     '''expr : MINUS expr %prec UMINUS'''
     p[0] = OpApp(p.lineno(2), 'UMINUS', [p[2]])
-
+    
 
 # Error rule for syntax errors
 def p_error(p):
     if p is None:
         raise SyntaxError('Syntax error')
+    
     raise SyntaxError(f'Syntax error at line {p.lineno}')
 
 

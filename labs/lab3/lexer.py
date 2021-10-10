@@ -109,7 +109,7 @@ def t_NUMBER(t):
 
 def t_COMMENT(t):
     r'//.*\n?'
-    pass
+    t.lexer.lineno += t.value.count("\n")
 
 
 def t_error(t):

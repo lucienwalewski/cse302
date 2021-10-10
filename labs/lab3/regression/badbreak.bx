@@ -1,5 +1,16 @@
 // break outside of any loop
 def main() {
+// other comment
+
+
+
+
+
+
+
+
+
+
   if (10 == 20) {
     break;
   }

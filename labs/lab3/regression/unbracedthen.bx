@@ -4,3 +4,4 @@ def main() {
   if (x % 2 == 0)
     print(42);
 }
+// small comment

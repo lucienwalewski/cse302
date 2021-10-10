@@ -61,6 +61,7 @@ def test_all_bad():
     for file in bad_files:
         with open(file, 'r') as fp:
             reset()
+            lexer.lineno = 0
             error = True
             try:
                 res = parser.parse(fp.read())
