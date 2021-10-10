@@ -9,7 +9,7 @@ opcode_map = {
     'BITSHL': 'shl', 'BITSHR': 'shr', 'BITCOMPL': 'not',
     'UMINUS': 'neg',
 
-    'EQUALITY': 'jz', 'DISSEQUALITY': 'jnz', 'LT': 'jnge', 'LEQ': 'jng',
+    'EQUALITY': 'jz', 'DISEQUALITY': 'jnz', 'LT': 'jnge', 'LEQ': 'jng',
     'GT': 'jnle', 'GEQ': 'gnl'
 }
 

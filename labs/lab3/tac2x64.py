@@ -97,7 +97,6 @@ def tac_to_asm(tac_instrs):
             jump = jcc[opcode]
             assert len(args) == 2
             arg = lookup_temp(args[0], temp_map)
-            print(args)
             label = args[1][1:]
             asm.extend(jump(arg, label))
         elif opcode == 'copy':

@@ -12,17 +12,20 @@ A class hierarchy for the AST of the BX language.
 
 from typing import Type
 
+declarations = []
+declarations_line = {}
 
 class Node:
     """Superclass of all AST nodes"""
     vardecls = {}
+    fname = ''
 
     def __init__(self, sloc):
         """
         sloc -- source location (list of 6 numbers; see handout for meaning)
         """
         self.sloc = sloc
-
+    
 
 class Stmt(Node):
     """Superclass of all statements"""
@@ -53,6 +56,10 @@ class Block(Stmt):
         for stmt in self.stmts:
             stmt.type_check(var_tys)
         var_tys = var_tys[:-1]
+
+    def syntax_check(self, fname):
+        for stmt in self.stmts:
+            stmt.syntax_check(fname)
 
     @property
     def js_obj(self):
@@ -85,6 +92,10 @@ class Variable(Expr):
     def type_check(self, var_tys):
         pass
 
+    def expr_check(self, fname):
+        if self.name not in declarations:
+            raise ValueError(f'{fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
+
     @property
     def js_obj(self):
         return {'tag': 'Variable',
@@ -106,6 +117,11 @@ class Number(Expr):
     def type_check(self, var_tys):
         pass
 
+    def expr_check(self, fname):
+        if self.value < 0 or (self.value >> 63):
+            raise ValueError(
+                f'{fname}:line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
+
     @property
     def js_obj(self):
         return {'tag': 'Number',
@@ -124,6 +140,9 @@ class Bool(Expr):
         self.ty = 'bool'
 
     def type_check(self, var_tys):
+        pass
+
+    def expr_check(self, fname):
         pass
 
     @property
@@ -165,6 +184,10 @@ class OpApp(Expr):
             raise TypeError(
                 f'Operation {self.op} not defined for arguments {self.args} with types {tuple([arg.ty for arg in self.args])}')
 
+    def expr_check(self, fname):
+        for arg in self.args:
+            arg.expr_check(fname)
+
     @property
     def js_obj(self):
         return {'tag': 'OpApp',
@@ -195,6 +218,15 @@ class Vardecl(Stmt):
         self.var.ty = self.expr.ty
         var_tys[-1][self.var.name] = self.var.ty
 
+    def syntax_check(self, fname):
+        global declarations
+        self.expr.expr_check(fname)
+        if self.var.name in declarations:
+            raise ValueError(f'{fname}:line {self.sloc}:Error:Duplicate declaration of variable "{self.var.name}"\n'f'{fname}:line {declarations_line[self.var.name]}:Info:Earlier declaration of "{self.var.name}"')
+
+        declarations.append(self.var.name)
+        declarations_line[self.var.name] = self.sloc
+        
     @property
     def js_obj(self):
         return {'tag': 'Vardecl',
@@ -223,6 +255,11 @@ class IfElse(Stmt):
         self.block.type_check(var_tys)
         self.ifrest.type_check(var_tys)
 
+    def syntax_check(self, fname):
+        self.condition.expr_check(fname)
+        self.block.syntax_check(fname)
+        self.ifrest.syntax_check(fname)
+
     @property
     def js_obj(self):
         return {'tag': 'IfElse',
@@ -248,6 +285,11 @@ class While(Stmt):
                 f'While condition must be of type bool (cannot be of type {self.condition.ty}')
         self.block.type_check(var_tys)
 
+    def syntax_check(self, fname):
+        self.condition.expr_check(fname)
+        self.block.syntax_check(fname)
+
+
     @property
     def js_obj(self):
         return {'tag': 'While',
@@ -261,6 +303,9 @@ class Jump(Stmt):
         self.op = op
 
     def type_check(self, var_tys):
+        pass
+
+    def syntax_check(self, fname):
         pass
 
     @property
@@ -287,6 +332,10 @@ class Assign(Stmt):
             raise TypeError(
                 f"Assignment of variable '{self.var.name}' of type '{var_type}' to expr of type '{self.expr.ty}'")
 
+    def syntax_check(self, fname):
+        self.expr.expr_check(fname)
+        self.var.expr_check(fname)
+
     @property
     def js_obj(self):
         return {'tag': 'Assign',
@@ -307,6 +356,9 @@ class Print(Stmt):
         if self.expr.ty != 'int':
             raise TypeError(f'Cannot print expr of type {self.expr.ty}')
 
+    def syntax_check(self, fname):
+        self.expr.expr_check(fname)
+
     @property
     def js_obj(self):
         return {'tag': 'Print',
@@ -325,8 +377,13 @@ class Program(Node):
     def type_check(self, var_tys):
         self.block.type_check(var_tys)
 
+    def syntax_check(self, fname):
+        fname = fname
+        self.block.syntax_check(fname)
+
     @property
     def js_obj(self):
         return {'tag': 'Program',
                 'vars': self.lvars,
                 'block': self.block.js_obj}
+

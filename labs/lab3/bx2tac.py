@@ -3,22 +3,20 @@ import sys
 
 from ast2tac import Prog
 from lexer import lexer
-from syntax_checker import check_syntax
 from parser import parser_yacc
 
 
 def make_Prog(filename: str) -> Prog:
     with open(filename, 'r') as fp:
         try:
-            parse_output = parser_yacc.parse(fp.read(), lexer=lexer)
+            prog = parser_yacc.parse(fp.read(), lexer=lexer)
         except SyntaxError as serr:
             print(serr)
             exit(1)
-    
-    # if check_syntax(parse_output, filename):
-    #     sys.exit(1)
 
-    return Prog(parse_output)
+    prog.syntax_check(filename) 
+    
+    return Prog(prog)
 
 
 def bx2tac(filename: str) -> list:

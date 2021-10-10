@@ -22,10 +22,15 @@ if __name__ == '__main__':
     ap.add_argument('fname', metavar='FILE', type=str, nargs=1,
                     help='The BX(JSON) file to process')
     opts = ap.parse_args(sys.argv[1:])
+    fname = opts.fname[0]
     if opts.keep_tac:
-        tac = bx2tacjson(opts.fname[0])
-    tac = bx2tac(opts.fname[0])
-    compile_tac(tac, opts.fname[0])
-    cmd = ['gcc', '-o', opts.fname[0][:-3], 'bx_runtime.c', opts.fname[0][:-3] + '.s']
+        tac = bx2tacjson(fname)
+    tac = bx2tac(fname)
+    compile_tac(tac, fname)
+    cmd = ['gcc', '-o', fname[:-3], 'bx_runtime.c', fname[:-3] + '.s']
     p = subprocess.Popen(cmd)
     p.wait()
+    cmd = ['rm', fname[:-3] + '.s']
+    p = subprocess.Popen(cmd)
+    p.wait()
+    print(f'{fname[:-3] + ".s"} -> {fname[:-3]}')
