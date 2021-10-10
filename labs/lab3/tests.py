@@ -48,7 +48,7 @@ def test_asm():
             tac = [{'proc': '@main',
                     'body': prog.get_instructions()}]
 
-            compile_tac(tac, file)
+            compile_tac(tac, file, write=False)
             # cmd = ['gcc', '-o', file[:-3], 'bx_runtime.c', file[:-3] + '.s']
             # p = subprocess.Popen(cmd)
             # p.wait()
