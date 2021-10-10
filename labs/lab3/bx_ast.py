@@ -27,7 +27,7 @@ class Node:
 
     def __init__(self, sloc):
         """
-        sloc -- source location (list of 6 numbers; see handout for meaning)
+        sloc -- source location linenumber
         """
         self.sloc = sloc
     
@@ -37,7 +37,6 @@ class Stmt(Node):
 
     def __init__(self, sloc):
         super().__init__(sloc)
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         pass
@@ -94,7 +93,6 @@ class Variable(Expr):
         # assert name in self.vardecls
         self.name = name
         self.ty = type
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         pass
@@ -170,7 +168,6 @@ class OpApp(Expr):
         assert isinstance(op, str), op
         self.op = op
         self.args = tuple(args)     # make container class explicitly a tuple
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         for arg in self.args:
@@ -217,7 +214,6 @@ class Vardecl(Stmt):
         super().__init__(sloc)
         self.var = var
         self.expr = expr
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         if self.var.name in var_tys[-1]:
@@ -255,7 +251,6 @@ class IfElse(Stmt):
         self.condition = condition
         self.block = block
         self.ifrest = ifrest
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         self.condition.type_check(var_tys)
@@ -287,7 +282,6 @@ class While(Stmt):
         super().__init__(sloc)
         self.condition = condition
         self.block = block
-        self.sloc
 
     def type_check(self, var_tys):
         self.condition.type_check(var_tys)
@@ -312,7 +306,6 @@ class Jump(Stmt):
     def __init__(self, sloc, op: str):
         super().__init__(sloc)
         self.op = op
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         pass
@@ -336,7 +329,6 @@ class Assign(Stmt):
         super().__init__(sloc)
         self.var = var
         self.expr = expr
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         var_type = self.find_variable_type(self.var.name, var_tys)
@@ -363,7 +355,6 @@ class Print(Stmt):
         """
         super().__init__(sloc)
         self.expr = expr
-        self.sloc = sloc
 
     def type_check(self, var_tys):
         self.expr.type_check(var_tys)

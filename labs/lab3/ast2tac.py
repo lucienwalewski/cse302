@@ -173,7 +173,7 @@ class Prog():
                 self._emit('jmp', [self._break_stack[-1]], None)
             elif stmt.op == 'continue':
                 if len(self._continue_stack) < 1:
-                    raise ValueError(f'Bad continue')
+                    raise ValueError(f'Bad continue at line {stmt.sloc}')
                 self._emit('jmp', [self._continue_stack[-1]], None)
         else:
             print(stmt)
