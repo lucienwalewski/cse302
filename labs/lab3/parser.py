@@ -197,8 +197,7 @@ def p_expr_uminus(p):
 # Error rule for syntax errors
 def p_error(p):
     if p is None:
-        print(f"Syntax error!")
-        raise SyntaxError
+        raise SyntaxError('Syntax error')
     raise SyntaxError(f'Syntax error at line {p.lineno}')
 
 

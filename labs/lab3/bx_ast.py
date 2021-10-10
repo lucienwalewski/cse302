@@ -45,7 +45,7 @@ class Stmt(Node):
         for scope in reversed(var_tys):
             if var in scope:
                 return scope[var]
-        return ValueError(f'Variable {var} not in scope')
+        raise ValueError(f'Variable {var} not in scope')
 
 
 ####################

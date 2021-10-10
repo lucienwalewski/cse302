@@ -12,7 +12,7 @@ good_path = 'examples/'
 good_files = [os.path.join(dp, f) for dp, _, fn in os.walk(good_path) for f in fn]
 
 bad_path = 'regression/'
-bad_files = [os.path.join(dp, f) for dp, _, fn in os.walk(good_path) for f in fn]
+bad_files = [os.path.join(dp, f) for dp, _, fn in os.walk(bad_path) for f in fn]
 
 def test_lex():
     for file in good_files:
@@ -44,10 +44,8 @@ def test_asm():
             res = parser.parse(fp.read())
             res.syntax_check(file)
             prog = Prog(res)
-
             tac = [{'proc': '@main',
                     'body': prog.get_instructions()}]
-
             compile_tac(tac, file, write=False)
             # cmd = ['gcc', '-o', file[:-3], 'bx_runtime.c', file[:-3] + '.s']
             # p = subprocess.Popen(cmd)
@@ -58,6 +56,25 @@ def test_asm():
             # cmd = ['rm', file[:-3]]
             # p = subprocess.Popen(cmd)
             # p.wait()
+
+def test_all_bad():
+    for file in bad_files:
+        with open(file, 'r') as fp:
+            reset()
+            error = True
+            try:
+                res = parser.parse(fp.read())
+                res.syntax_check(file)
+                prog = Prog(res)
+                tac = [{'proc': '@main',
+                        'body': prog.get_instructions()}]
+                compile_tac(tac, file, write=False)
+                error = False # No error raised
+            except Exception as e:
+                print(f'File:{file}.Error: {e}')
+        assert error != False, f'Did not raise an exception for {file}'
+
         
-# if __name__ == '__main__':
-#     test_parse()
+if __name__ == '__main__':
+    # test_parse()
+    test_all_bad()
