@@ -15,24 +15,24 @@ from typing import List
 import sys
 import os
 
-jcc = {"jz": (lambda arg, label: ['movq $0, %r11',
+jcc = {"je": (lambda arg, label: ['movq $0, %r11',
                                   f'cmpq %r11, {arg}',
-                                  f'jz {label}']),
-       "jnz": (lambda arg, label: ['movq $0, %r11',
+                                  f'je {label}']),
+       "jne": (lambda arg, label: ['movq $0, %r11',
                                    f'cmpq %r11, {arg}',
-                                   f'jnz {label}']),
+                                   f'jne {label}']),
        "jl": (lambda arg, label: ['movq $0, %r11',
                                   f'cmpq %r11, {arg}',
                                   f'jl {label}']),
-       "jnl": (lambda arg, label: ['movq $0, %r11',
-                                   f'cmpq %r11, {arg}',
-                                   f'jnl {label}']),
        "jle": (lambda arg, label: ['movq $0, %r11',
                                    f'cmpq %r11, {arg}',
                                    f'jle {label}']),
-       "jnle": (lambda arg, label: ['movq $0, %r11',
+       "jg": (lambda arg, label: ['movq $0, %r11',
+                                   f'cmpq %r11, {arg}',
+                                   f'jg {label}']),
+       "jge": (lambda arg, label: ['movq $0, %r11',
                                     f'cmpq %r11, {arg}',
-                                    f'jnle {label}'])
+                                    f'jge {label}'])
        }
 
 
