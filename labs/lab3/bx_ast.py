@@ -15,6 +15,10 @@ from typing import Type
 declarations = []
 declarations_line = {}
 
+def reset():
+    declarations = []
+    declarations_line = {}
+
 class Node:
     """Superclass of all AST nodes"""
     vardecls = {}

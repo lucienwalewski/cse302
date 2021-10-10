@@ -1,6 +1,6 @@
 import json
 import sys
-from parser import parser_yacc
+from parser import parser
 
 from ast2tac import Prog
 from lexer import lexer
@@ -10,7 +10,7 @@ if __name__ == '__main__':
     filename = sys.argv[1]
     with open(filename, 'r') as fp:
         try:
-            parse_output = parser_yacc.parse(fp.read(), lexer=lexer)
+            parse_output = parser.parse(fp.read(), lexer=lexer)
         except SyntaxError as serr:
             exit(1)
 

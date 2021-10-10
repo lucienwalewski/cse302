@@ -3,13 +3,13 @@ import sys
 
 from ast2tac import Prog
 from lexer import lexer
-from parser import parser_yacc
+from parser import parser
 
 
 def make_Prog(filename: str) -> Prog:
     with open(filename, 'r') as fp:
         try:
-            prog = parser_yacc.parse(fp.read(), lexer=lexer)
+            prog = parser.parse(fp.read(), lexer=lexer)
         except SyntaxError as serr:
             print(serr)
             exit(1)

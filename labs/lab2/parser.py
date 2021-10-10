@@ -126,4 +126,4 @@ def p_error(p):
     raise SyntaxError
 
 
-parser_yacc = yacc.yacc()
+parser = yacc.yacc()

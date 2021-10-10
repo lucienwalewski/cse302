@@ -8,9 +8,6 @@ Usage:
 Returns:
     Null"""
 
-# from py.ply import lex
-# from labs.lab3.py.ply import lex
-# from py.ply import lex
 from py.ply import lex 
 
 reserved = {'print': 'PRINT',

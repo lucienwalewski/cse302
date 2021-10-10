@@ -202,4 +202,4 @@ def p_error(p):
     raise SyntaxError(f'Syntax error at line {p.lineno}')
 
 
-parser_yacc = yacc.yacc()
+parser = yacc.yacc()
