@@ -16,6 +16,7 @@ declarations = []
 declarations_line = {}
 
 def reset():
+    global declarations, declarations_line
     declarations = []
     declarations_line = {}
 
@@ -174,11 +175,11 @@ class OpApp(Expr):
 
         if self.op in {'PLUS', 'MINUS', 'TIMES', 'DIV',
                        'MODULUS', 'BITAND', 'BITOR', 'BITXOR',
-                       'BITSHL', 'BITSHR', 'UMINUS', 'NEG'
+                       'BITSHL', 'BITSHR', 'UMINUS', 'NEG', 'BITCOMPL'
                        } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'int'
         elif self.op in {'EQUALITY', 'DISEQUALITY',
-                         'LT', 'LEQ', 'GT', 'GEQ', 'BITCOMPL'
+                         'LT', 'LEQ', 'GT', 'GEQ' 
                          } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'bool'
         elif self.op in {'BOOLAND', 'BOOLOR', 'BOOLNEG'

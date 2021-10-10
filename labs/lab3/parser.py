@@ -9,7 +9,7 @@ Returns:
 
 from bx_ast import *
 from lexer import lexer, tokens
-from py.ply import yacc
+from ply import yacc
 
 precedence = (
     ('left', 'BOOLOR'),

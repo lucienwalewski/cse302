@@ -8,7 +8,7 @@ Usage:
 Returns:
     Null"""
 
-from py.ply import lex 
+from ply import lex
 
 reserved = {'print': 'PRINT',
             'main': 'MAIN',
