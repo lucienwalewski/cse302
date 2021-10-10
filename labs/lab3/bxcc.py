@@ -7,9 +7,10 @@ Usage:
 Returns:
     filename.s'''
 
-import sys
-import json
 import argparse
+import json
+import subprocess
+import sys
 
 from bx2tac import bx2tac, bx2tacjson
 from tac2x64 import compile_tac
@@ -25,9 +26,6 @@ if __name__ == '__main__':
         tac = bx2tacjson(opts.fname[0])
     tac = bx2tac(opts.fname[0])
     compile_tac(tac, opts.fname[0])
-
-    # print([instr.js_obj for instr in tac])
-    # with open(opts.fname[0].removesuffix('.bx') + '.tac.json', 'w') as fp:
-    #     json.dump([instr.js_obj for instr in tac], fp)
-
-    # compile_tac()
+    cmd = ['gcc', '-o', opts.fname[0][:-3], 'bx_runtime.c', opts.fname[0][:-3] + '.s']
+    p = subprocess.Popen(cmd)
+    p.wait()

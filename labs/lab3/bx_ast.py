@@ -158,7 +158,7 @@ class OpApp(Expr):
                          'LT', 'LEQ', 'GT', 'GEQ', 'BITCOMPL'
                          } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'bool'
-        elif self.op in {'BOOLAND', 'BOOLOR', 'NOT'
+        elif self.op in {'BOOLAND', 'BOOLOR', 'BOOLNEG'
                          } and all([arg.ty == 'bool' for arg in self.args]):
             self.ty = 'bool'
         else:

@@ -7,9 +7,9 @@ Usage: Library
 Returns:
 """
 
-from py.ply import yacc
-from lexer import tokens, lexer
 from bx_ast import *
+from lexer import lexer, tokens
+from py.ply import yacc
 
 precedence = (
     ('left', 'BOOLOR'),
@@ -181,7 +181,7 @@ def p_operators(p):
         if p[1] == '~':
             p[0] = OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
         elif p[1] == '!':
-            p[0] = OpApp(p.lineno(2), 'BOOLNEG', p[2])
+            p[0] = OpApp(p.lineno(2), 'BOOLNEG', [p[2]])
 
 
 def p_expr_parens(p):
@@ -199,8 +199,7 @@ def p_error(p):
     if p is None:
         print(f"Syntax error!")
         raise SyntaxError
-    print(f"Syntax error in input at line {p.lineno}")
-    raise SyntaxError
+    raise SyntaxError(f'Syntax error at line {p.lineno}')
 
 
 parser_yacc = yacc.yacc()

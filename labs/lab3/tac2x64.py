@@ -10,7 +10,6 @@ Requires: a working gcc
 """
 
 import json
-# from labs.lab2.ast2tac import Instr
 from ast2tac import Instr
 from typing import List
 import sys
@@ -98,6 +97,7 @@ def tac_to_asm(tac_instrs):
             jump = jcc[opcode]
             assert len(args) == 2
             arg = lookup_temp(args[0], temp_map)
+            print(args)
             label = args[1][1:]
             asm.extend(jump(arg, label))
         elif opcode == 'copy':
@@ -138,11 +138,9 @@ def tac_to_asm(tac_instrs):
                         "popq %rdi"])
         else:
             assert False, f'unknown opcode: {opcode}'
-        print(asm)
     asm[:0] = [f'pushq %rbp',
                f'movq %rsp, %rbp',
-               f'subq ${8 * len(temp_map)}, %rsp'] \
-        #  + [f'// {tmp} in {reg}' for (tmp, reg) in temp_map.items()]
+               f'subq ${8 * len(temp_map)}, %rsp'] 
     asm.extend([f'movq %rbp, %rsp',
                 f'popq %rbp',
                 f'xorq %rax, %rax',
@@ -160,8 +158,8 @@ def compile_tac(tac: List[Instr], fname):
                f'\t.text',
                f'\t.globl main',
                f'main:']
-    xname = fname[:-5] + '.exe'
-    sname = fname[:-5] + '.s'
+    xname = fname[:-3] + '.exe'
+    sname = fname[:-3] + '.s'
     with open(sname, 'w') as afp:
         print(*asm, file=afp, sep='\n')
     print(f'{fname} -> {sname}')
@@ -182,15 +180,7 @@ def compile_tac_from_json(fname):
                f'\t.text',
                f'\t.globl main',
                f'main:']
-    xname = fname[:-5] + '.exe'
     sname = fname[:-5] + '.s'
     with open(sname, 'w') as afp:
         print(*asm, file=afp, sep='\n')
     print(f'{fname} -> {sname}')
-
-
-# if __name__ == '__main__':
-#     if len(sys.argv) != 2:
-#         print(f'Usage: {sys.argv[0]} tacfile.tac.json')
-#         sys.exit(1)
-#     compile_tac(sys.argv[1])

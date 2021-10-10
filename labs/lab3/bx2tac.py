@@ -1,10 +1,10 @@
 import json
 import sys
-from parser import parser_yacc
 
 from ast2tac import Prog
 from lexer import lexer
 from syntax_checker import check_syntax
+from parser import parser_yacc
 
 
 def make_Prog(filename: str) -> Prog:
@@ -12,7 +12,7 @@ def make_Prog(filename: str) -> Prog:
         try:
             parse_output = parser_yacc.parse(fp.read(), lexer=lexer)
         except SyntaxError as serr:
-            print(f'Syntax error:{serr}')
+            print(serr)
             exit(1)
     
     # if check_syntax(parse_output, filename):
@@ -26,9 +26,12 @@ def bx2tac(filename: str) -> list:
         'body': make_Prog(filename).get_instructions()}]
 
 def bx2tacjson(filename: str) -> list:
-    tac = make_Prog(filename)
-    tacname = filename[:3] + '.tac.json'
+    bod = [instr.js_obj for instr in make_Prog(filename).get_instructions()]
+    tac = [{'proc': '@main',
+        'body': bod}]
+    print(tac)
+    tacname = filename[:-3] + '.tac.json'
     with open(tacname, 'w') as fp:
-        json.dump(tac.js_obj, fp)
+        json.dump(tac, fp)
     print(f'{filename} -> {tacname}')
-    return tac.get_instructions()
+    return tac

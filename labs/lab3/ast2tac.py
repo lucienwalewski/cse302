@@ -62,7 +62,7 @@ class Prog():
     def _fresh_label(self) -> int:
         '''Obtain fresh label'''
         self.__last_label += 1
-        t = f'L{self.__last_label}'
+        t = f'%.L{self.__last_label}'
         return t
 
     def _lookup(self, var: str) -> int:
@@ -107,7 +107,7 @@ class Prog():
                 self._emit('jmp', [Lf], None)
         elif isinstance(bexpr, OpApp):
             if bexpr.op in {'EQUALITY', 'DISEQUALITY',
-                            'LT', 'LEQ' 'GT', 'GEQ'}:
+                            'LT', 'LEQ', 'GT', 'GEQ'}:
                 args = []
                 for arg in bexpr.args:
                     arg_target = self._fresh()
@@ -123,6 +123,7 @@ class Prog():
             elif bexpr.op == 'BOOLNEG':
                 self.tmm_bool_expr(bexpr.args[0], Lf, Lt)
         else:
+            print(bexpr)
             raise ValueError(
                 f'tmm_expr: unknown expr kind: {bexpr.__class__}')
 
@@ -137,6 +138,7 @@ class Prog():
             self._emit('print', [target], None)
         elif isinstance(stmt, IfElse):
             Lt, Lf, Lo = [self._fresh_label() for _ in range(3)]
+            self.tmm_bool_expr(stmt.condition, Lt, Lf)
             self._emit('label', [Lt], None)
             self.tmm_stmt(stmt.block)
             self._emit('jmp', [Lo], None)
@@ -164,6 +166,7 @@ class Prog():
             elif stmt.op == 'continue':
                 self._emit('jmp', [self._continue_stack[-1]], None)
         else:
+            print(stmt)
             raise ValueError(f'tmm_stmt: unknown stmt kind: {stmt.__class__}')
 
     def get_instructions(self):
@@ -174,7 +177,7 @@ def ast_to_tac_json(fname, alg):
     assert fname.endswith('.json')
     with open(fname, 'rb') as fp:
         js_obj = json.load(fp)
-        ast_prog = ast.Program.load(js_obj['ast'])
+        ast_prog = Program.load(js_obj['ast'])
     tac_prog = Prog(ast_prog, alg)
     tacname = fname[:-4] + 'tac.json'
     with open(tacname, 'w') as fp:
