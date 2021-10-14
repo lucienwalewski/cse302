@@ -1,0 +1,18 @@
+def main() {
+  var x = 10 : int;
+  var y = 20 : int;
+
+  if (x == y) { print(0); } // false
+  if (x != y) { print(1); } // true
+  if (x * 2 == y) { print(2); } // true
+  if (x < y) { print(3); } // true
+  if (x > y) { print(0); } // false
+  if (x < x) { print(0); } // false
+  if (x <= y) { print(4); } // true
+  if (x >= y) { print(0); } // false
+  if (x <= x) { print(5); } // true
+  if (x <= y || y <= x) { print(6); } // true
+  if (x == x) { print(7); } // true
+  if (! (x == x)) { print(0); } // false
+  if (! (x != x)) { print(8); } // true
+}
