@@ -23,6 +23,18 @@ class BasicBlock():
         succ -- successor(s) of the block'''
         assert isinstance(instructions, list)
         self.instructions = instructions
+        label = instructions[0]
+        assert label.opcode == 'label', 'Incorrect beginning of basic block'
+        self.label = label.args[0]
+        end = instructions[-1]
+        if end.opcode == 'ret':
+            self.end = 'ret'
+        elif end.opcode == 'jmp':
+            jcc = self.instructions[-2]
+            assert jcc.opcode in conditional_jumps
+            self.end = jcc.args[0]
+        else:
+            raise ValueError('Incorrect end of basic block')
         self._prev = []
         self._succ = []
     
@@ -97,8 +109,12 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
 def build_cfg(basic_blocks: List[BasicBlock]) -> BasicBlock:
     '''Given a list of basic blocks construct the 
-    cfg of the procedure'''
-    pass
+    cfg of the procedure. Assume that the first block in the
+    list is the entry block'''
+    first_block = basic_blocks[0] 
+    assert first_block.instructions[0].opcode == 'label', first_block.instructions[0].opcode
+    assert first_block.instructions[0].args[0] == 'Lentry'
+
 
 def apply_control_flow_simplification(cfg):
     pass
