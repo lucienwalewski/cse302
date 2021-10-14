@@ -16,14 +16,15 @@ from typing import List
 
 __last_label = 0
 
-conditional_jumps = ["je","jne","jl","jle","jg","jge"] # list of cond jump instructions
+conditional_jumps = ["je", "jne", "jl", "jle",
+                     "jg", "jge"]  # list of cond jump instructions
+
 
 class BasicBlock():
     def __init__(self, instructions) -> None:
         '''
         instructions -- list of tac instructions
-        prev -- predecessor(s) of the block
-        succ -- successor(s) of the block'''
+        '''
         assert isinstance(instructions, list)
         self.instructions = instructions
         label = instructions[0]
@@ -39,7 +40,7 @@ class BasicBlock():
 
         self._prev = []
         self._succ = []
-    
+
     @property
     def prev(self):
         return self._prev
@@ -53,8 +54,8 @@ class BasicBlock():
         return self._label
 
     @property
-    def end(self):
-        return self._end
+    def destinations(self):
+        return self._destinations
 
     def add_prev(self, prev):
         '''Add BasisBlock to list of predecessors'''
@@ -67,10 +68,6 @@ class BasicBlock():
         self._succ.append(succ)
 
 
-
-
-
-
 def _fresh_label() -> int:
     '''Obtain fresh label'''
     global __last_label
@@ -79,7 +76,11 @@ def _fresh_label() -> int:
     return t
 
 
-def build_basic_blocks(body):
+def find_largest_label(body: list) -> int:
+    return max([int(instr['args'][0][3:]) for instr in body if instr['opcode'] == 'label'])
+
+
+def build_basic_blocks(body: list) -> List[BasicBlock]:
     """
     1. Add an entry label before first instruction if needed.
     2. For jumps, add a label after the instruction if one doesn’t already exist.
@@ -87,77 +88,60 @@ def build_basic_blocks(body):
     (inclusive), a ret (inclusive), or another label (exclusive).
     4. Add explicit jmps for fall-throughs. All blocks must end with a ret or a jmp.
     """
-    list_of_blocks = []
-    block = []
+    global __last_label
+    __last_label = find_largest_label(body)
 
-    
-        ## add entry label to block
-    
-    
+    if body[0]['opcode'] != 'label':
+        body[:0] = [{"opcode": "label", "args": [
+            _fresh_label()], "result": []}]
 
-    
-    while body : 
+    body_labelled = []
+    for i, instr in enumerate(body):
+        if instr['opcode'] in conditional_jumps + ['jmp']:
+            body_labelled.append(instr)
+            if body[i + 1]['opcode'] != 'label':
+                body_labelled.append({'opcode': 'label', 'args': [
+                    _fresh_label()], 'result': []})
+        else:
+            body_labelled.append(instr)
 
-        
+    i, j = 0, 1
+    block_list = []
+    while j < len(body_labelled):
+        while body_labelled[j]['opcode'] not in ['jmp', 'ret', 'label'] + conditional_jumps:
+            j += 1
+        if body_labelled[j]['opcode'] in ['jmp', 'ret'] + conditional_jumps:
+            block_list.append(BasicBlock(body_labelled[i:j+1]))
+            i = j + 1
+            j += 2
+        else:  # Label
+            block_list.append(BasicBlock(body_labelled[i:j]))
+            i = j
+            j += 1
 
-        if body[0]["opcode"] != "label" : ## add label to beginning of the block
-            body[:0] = [{"opcode":"label","args":[_fresh_label()], "result":[]}]
+    for i, block in enumerate(block_list):
+        if block.instructions[-1]['opcode'] not in ['jmp', 'ret']:
+            block.instructions.append([{'opcode': 'jmp', 'args':
+                                        block_list[i+1].instructions[0]['args'], 'result': []}])
 
-        i = 0
-        
-        while True :
-            ## go through instructions until we reach a jump or a conditionnal jump followed by a non jump instruction.
-            if  (i == len(body)-1 or body[i]["opcode"] in ["jmp","ret"]) or  (  body[i]["opcode"] in conditional_jumps and (body[i+1]["opcode"] not in conditional_jumps+["jmp","ret"] or i+1 >= len(body))  ) :
-                break
-        
-              
-            i +=1 
-
-        block = body[:i+1]
-
-        if i == len(body)-1 :
-            block.append({"opcode":"ret","args":["this will be changed"], "result":[]})
-
-
-        if block[-1]["opcode"] in conditional_jumps :
-            ## last instruction is a conditionnal jump. we add an unc. jump
-            if body[0]["opcode"] == "label" :
-                ## there is already a label for the next block. we jump to this label
-                block.append({"opcode":"jmp","args":[body[0]["args"]], "result":[]})
-            else :
-                ## otherwise, we create the label and the jump to it 
-                body[:0] = [{"opcode":"label","args":[_fresh_label()], "result":[]}]
-                block.append({"opcode":"jmp","args":[f'%.Lb{__last_label}'], "result":[]})
+    return block_list
 
 
-        list_of_blocks.append(BasicBlock(block))
-        body = body[i+1:]
-
-
-
-
-    return list_of_blocks
-
-
-
-            
-
-            
-
-
-def build_cfg(basic_blocks: List[BasicBlock]) -> BasicBlock:
+def build_cfg(basic_blocks: list[BasicBlock]) -> BasicBlock:
     '''Given a list of basic blocks construct the 
     cfg of the procedure. Assume that the first block in the
     list is the entry block'''
-    entry_block = basic_blocks[0] 
+    entry_block = basic_blocks[0]
     current_block = entry_block
     while True:
-        next_label = current_block.end
-        next_block = next(block for block in basic_blocks if block.label == next_label)
-        current_block.add_succ(next_block)
-        next_block.add_prev(current_block)
-
-
+        for dest in current_block.destinations:
+            dest_block = next(
+                (block for block in basic_blocks if block.label == dest), None)
+            dest_block.add_prev(current_block)
+            current_block.add_succ(dest_block)
+            if dest_block is None:
+                break
+            current_block
 
     return entry_block
 
@@ -166,43 +150,38 @@ def apply_control_flow_simplification(cfg):
     pass
 
 
-def serialize(cfg) :
+def serialize(cfg):
     pass
 
 
-def optimize(json_tac) :
+def optimize(json_tac):
     body = json_tac["body"]
     basic_blocks = build_basic_blocks(body)
-    cfg = build_cfg(basic_blocks)
-    cfg_optimized = apply_control_flow_simplification(cfg)
-    serialized_tac = serialize(cfg_optimized)
+    # cfg = build_cfg(basic_blocks)
+    # cfg_optimized = apply_control_flow_simplification(cfg)
+    # serialized_tac = serialize(cfg_optimized)
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser(description='Codegen: Tac (JSON) to Tac optimized (JSON)')
+    ap = argparse.ArgumentParser(
+        description='Codegen: Tac (JSON) to Tac optimized (JSON)')
     ap.add_argument('-o', dest='o', action='store_true', default=False,
                     help="stores resulting json in a file")
     ap.add_argument('fname', metavar='FILE', type=str, nargs=1,
                     help='The TAC(JSON) file to process')
     opts, rem_args = ap.parse_known_args(sys.argv[1:])
-    if opts.o : 
+    if opts.o:
         ap.add_argument('fname_dest', metavar='FILE_DEST', type=str, nargs=1,
-                    help='The TAC(JSON) file to create')
+                        help='The TAC(JSON) file to create')
         opts = ap.parse_args(sys.argv[1:])
-
-
 
     json_tac_file = open(opts.fname[0])
     json_tac = json.load(json_tac_file)[0]
     optimized_tac = optimize(json_tac)
 
-    if opts.o :
-        json_tac_file = open(opts.fname_dest[0],"w")
-        json.dump(optimized_tac,json_tac_file)
+    if opts.o:
+        json_tac_file = open(opts.fname_dest[0], "w")
+        json.dump(optimized_tac, json_tac_file)
 
-    else :
+    else:
         print(optimized_tac)
-
-
-    
-
