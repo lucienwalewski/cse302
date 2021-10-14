@@ -13,7 +13,7 @@ import argparse
 import json
 from typing import List
 
-conditional_jumps = ["je","jne","jl","jle","jg","jge"] ## list of cond jump instructions
+conditional_jumps = ["je","jne","jl","jle","jg","jge"] # list of cond jump instructions
 
 class BasicBlock():
     def __init__(self, instructions) -> None:
@@ -25,14 +25,14 @@ class BasicBlock():
         self.instructions = instructions
         label = instructions[0]
         assert label.opcode == 'label', 'Incorrect beginning of basic block'
-        self.label = label.args[0]
+        self._label = label.args[0]
         end = instructions[-1]
         if end.opcode == 'ret':
-            self.end = 'ret'
+            self._end = 'ret'
         elif end.opcode == 'jmp':
             jcc = self.instructions[-2]
             assert jcc.opcode in conditional_jumps
-            self.end = jcc.args[0]
+            self._end = jcc.args[0]
         else:
             raise ValueError('Incorrect end of basic block')
         self._prev = []
@@ -45,6 +45,14 @@ class BasicBlock():
     @property
     def succ(self):
         return self._succ
+
+    @property
+    def label(self):
+        return self._label
+
+    @property
+    def end(self):
+        return self._end
 
     def add_prev(self, prev):
         '''Add BasisBlock to list of predecessors'''
@@ -111,9 +119,12 @@ def build_cfg(basic_blocks: List[BasicBlock]) -> BasicBlock:
     '''Given a list of basic blocks construct the 
     cfg of the procedure. Assume that the first block in the
     list is the entry block'''
-    first_block = basic_blocks[0] 
-    assert first_block.instructions[0].opcode == 'label', first_block.instructions[0].opcode
-    assert first_block.instructions[0].args[0] == 'Lentry'
+    entry_block = basic_blocks[0] 
+    # assert first_block.instructions[0].opcode == 'label', first_block.instructions[0].opcode
+    # assert first_block.instructions[0].args[0] == 'Lentry'
+
+
+    return entry_block
 
 
 def apply_control_flow_simplification(cfg):
