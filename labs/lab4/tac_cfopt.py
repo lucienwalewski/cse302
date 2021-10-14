@@ -27,15 +27,15 @@ class BasicBlock():
         assert isinstance(instructions, list)
         self.instructions = instructions
         label = instructions[0]
-        assert label.opcode == 'label', 'Incorrect beginning of basic block'
-        self._label = label.args[0]
+        assert label["opcode"] == 'label', 'Incorrect beginning of basic block'
+        self._label = label["args"][0]
         end = instructions[-1]
-        if end.opcode == 'ret':
+        if end["opcode"] == 'ret':
             self._end = 'ret'
-        elif end.opcode == 'jmp':
+        elif end["opcode"] == 'jmp':
             jcc = self.instructions[-2]
-            assert jcc.opcode in conditional_jumps
-            self._end = jcc.args[0]
+            assert jcc["opcode"] in conditional_jumps
+            self._end = jcc["args"][0]
         else:
             raise ValueError('Incorrect end of basic block')
         self._prev = []
