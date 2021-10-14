@@ -11,18 +11,37 @@ CFG inference from linearized TAC
 import sys
 import argparse
 import json
+from typing import List
 
 conditional_jumps = [] ## list of cond jump instructions
 
+class BasicBlock():
+    def __init__(self, instructions, prev, succ) -> None:
+        assert isinstance(instructions, list)
+        assert isinstance(prev, BasicBlock)
+        assert isinstance(succ, BasicBlock)
+        self.instructions = instructions
+        self.prev = prev
+        self.succ = succ
+    
+    @property
+    def prev(self):
+        return self.prev
+
+    @property
+    def succ(self):
+        return self.succ
+
 
 def build_basic_blocks(body):
-"""
-1. Add an entry label before first instruction if needed.
-2. For jumps, add a label after the instruction if one doesn’t already exist.
-3. Start a new block at each label; accumulate instructions in the block until encountering a jump
-(inclusive), a ret (inclusive), or another label (exclusive).
-4. Add explicit jmps for fall-throughs. All blocks must end with a ret or a jmp.
-"""
+    '''
+    1. Add an entry label before first instruction if needed.
+    2. For jumps, add a label after the instruction if one doesn’t already exist.
+    3. Start a new block at each label; accumulate instructions in the block until encountering a jump
+    (inclusive), a ret (inclusive), or another label (exclusive).
+    4. Add explicit jmps for fall-throughs. All blocks must end with a ret or a jmp.
+    '''
+
     list_of_blocks = []
     block = []
 
@@ -47,6 +66,7 @@ def build_basic_blocks(body):
         block = body[:i+1]
 
         if block[-1]["opcode"] in conditional_jumps :
+            pass
             ## add an unconditionnal jump after the sequence of tac 
 
 
@@ -63,7 +83,7 @@ def build_basic_blocks(body):
 
 
 
-def build_cfg(basic_blocks):
+def build_cfg(basic_blocks: List):
     pass
 
 def apply_control_flow_simplification(cfg):
