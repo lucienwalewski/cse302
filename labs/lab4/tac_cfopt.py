@@ -13,6 +13,9 @@ import argparse
 import json
 from typing import List
 
+
+__last_label = 0
+
 conditional_jumps = ["je","jne","jl","jle","jg","jge"] # list of cond jump instructions
 
 class BasicBlock():
@@ -65,6 +68,18 @@ class BasicBlock():
         self._succ.append(succ)
 
 
+
+
+
+
+def _fresh_label() -> int:
+    '''Obtain fresh label'''
+    global __last_label
+    __last_label += 1
+    t = f'%.Lb{__last_label}'
+    return t
+
+
 def build_basic_blocks(body):
     """
     1. Add an entry label before first instruction if needed.
@@ -95,8 +110,8 @@ def build_basic_blocks(body):
             ## go through instructions until we reach a jump or a conditionnal jump followed by a non jump instruction.
             if  (i == len(body)-1 or body[i]["opcode"] in ["jmp","ret"]) or  (  body[i]["opcode"] in conditional_jumps and (body[i+1]["opcode"] not in conditional_jumps+["jmp","ret"] or i+1 >= len(body))  ) :
                 break
-            if body[i]["opcode"] !="label" :
-                print(body[i]["opcode"])
+        
+              
             i +=1 
 
         block = body[:i+1]
@@ -116,8 +131,14 @@ def build_basic_blocks(body):
                 block.append({"opcode":"jmp","args":[f'%.Lb{__last_label}'], "result":[]})
 
 
-        list_of_blocks.append(block)
+        list_of_blocks.append(BasicBlock(block))
         body = body[i+1:]
+
+
+
+
+    return list_of_blocks
+
 
 
             
