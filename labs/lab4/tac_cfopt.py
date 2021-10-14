@@ -13,7 +13,7 @@ import argparse
 import json
 from typing import List
 
-conditional_jumps = [] ## list of cond jump instructions
+conditional_jumps = ["je","jne","jl","jle","jg","jge"] ## list of cond jump instructions
 
 class BasicBlock():
     def __init__(self, instructions) -> None:
