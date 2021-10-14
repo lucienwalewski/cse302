@@ -28,27 +28,30 @@ def build_basic_blocks(body):
 
     
         ## add entry label to block
-        
+
+    if body[0]["opcode"] != label : ## add label to beginning of the block
+        pass
+
     
-    while body != []: 
+    while body : 
 
         i = 0
-        if body[0]["opcode"] != label : ## add label to beginning of the block
         
         while True :
-            if body[i]["opcode"] in conditional_jumps and (body[i+1]["opcode"] not in conditional_jumps or i+1 >= len(body)) :
+            ## go through instructions until we reach a jump or a conditionnal jump followed by a non jump instruction.
+            if  (body[i]["opcode"] == ["jmp","ret"]) or  (  body[i]["opcode"] in conditional_jumps and (body[i+1]["opcode"] not in conditional_jumps+["jmp","ret"] or i+1 >= len(body))  ) :
                 break
             i +=1 
 
 
-        while i<len(body) and body[i]["opcode"] not in ["jmp","ret"] : ## add other jumps to the list for the code to be correct
-            i +=1
-
-        if body[i]["opcode"] in conditional_jumps :
-            ## go to the end of the conditionnal jump sequence and add an unconditionnal jump
-            ## dont forget to increment i when doing this 
-
         block = body[:i+1]
+
+        if block[-1]["opcode"] in conditional_jumps :
+            ## add an unconditionnal jump after the sequence of tac 
+
+
+
+
         list_of_blocks.append(block)
         body = body[i+1:]
 
@@ -92,40 +95,17 @@ if __name__ == '__main__':
         opts = ap.parse_args(sys.argv[1:])
 
 
+
+    json_tac_file = open(opts.fname[0])
+    json_tac = json.load(json_tac_file)[0]
+    optimized_tac = optimize(json_tac)
+
     if opts.o :
-        json_tac_file = open(opts.fname[0])
-        json_tac = json.load(json_tac_file)[0]
-        optimized_tac = optimize(json_tac)
         json_tac_file = open(opts.fname_dest[0],"w")
         json.dump(optimized_tac,json_tac_file)
 
     else :
-
-        json_tac_file = open(opts.fname[0])
-        json_tac = json.load(json_tac_file)[0]
-        optimized_tac = optimize(json_tac)
         print(optimized_tac)
-
-
-    # if sys.argv[1]=="o" :
-    #     assert argc==4 
-    #     assert argv[3].endswith(".tac.json")
-    #     json_tac_file = open(argv[2])
-    #     json_tac = json.load(json_tac_file)
-    #     optimized_tac = optimize(json_tac)
-    #     json_tac_file = open(argv[3],"w")
-    #     json.dump(optimized_tac,json_tac_file)
-    # else :
-    #     assert argc==2 
-    #     assert argv[2].endswith(".tac.json")
-    #     json_tac_file = open(argv[2])
-    #     json_tac = json.load(json_tac_file)
-    #     optimized_tac = optimize(json_tac)
-    #     print(optimized_tac)
-
-        
-
-        
 
 
     
