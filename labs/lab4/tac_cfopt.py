@@ -65,50 +65,62 @@ class BasicBlock():
         self._succ.append(succ)
 
 
-def build_basic_blocks(body: list) -> List[BasicBlock]:
-    '''
+def build_basic_blocks(body):
+    """
     1. Add an entry label before first instruction if needed.
     2. For jumps, add a label after the instruction if one doesn’t already exist.
     3. Start a new block at each label; accumulate instructions in the block until encountering a jump
     (inclusive), a ret (inclusive), or another label (exclusive).
     4. Add explicit jmps for fall-throughs. All blocks must end with a ret or a jmp.
-    '''
-
+    """
     list_of_blocks = []
     block = []
 
     
         ## add entry label to block
-
-    if body[0]["opcode"] != label : ## add label to beginning of the block
-        pass
+    
+    
 
     
     while body : 
+
+        
+
+        if body[0]["opcode"] != "label" : ## add label to beginning of the block
+            body[:0] = [{"opcode":"label","args":[_fresh_label()], "result":[]}]
 
         i = 0
         
         while True :
             ## go through instructions until we reach a jump or a conditionnal jump followed by a non jump instruction.
-            if  (body[i]["opcode"] == ["jmp","ret"]) or  (  body[i]["opcode"] in conditional_jumps and (body[i+1]["opcode"] not in conditional_jumps+["jmp","ret"] or i+1 >= len(body))  ) :
+            if  (i == len(body)-1 or body[i]["opcode"] in ["jmp","ret"]) or  (  body[i]["opcode"] in conditional_jumps and (body[i+1]["opcode"] not in conditional_jumps+["jmp","ret"] or i+1 >= len(body))  ) :
                 break
+            if body[i]["opcode"] !="label" :
+                print(body[i]["opcode"])
             i +=1 
-
 
         block = body[:i+1]
 
+        if i == len(body)-1 :
+            block.append({"opcode":"ret","args":["this will be changed"], "result":[]})
+
+
         if block[-1]["opcode"] in conditional_jumps :
-            pass
-            ## add an unconditionnal jump after the sequence of tac 
-
-
+            ## last instruction is a conditionnal jump. we add an unc. jump
+            if body[0]["opcode"] == "label" :
+                ## there is already a label for the next block. we jump to this label
+                block.append({"opcode":"jmp","args":[body[0]["args"]], "result":[]})
+            else :
+                ## otherwise, we create the label and the jump to it 
+                body[:0] = [{"opcode":"label","args":[_fresh_label()], "result":[]}]
+                block.append({"opcode":"jmp","args":[f'%.Lb{__last_label}'], "result":[]})
 
 
         list_of_blocks.append(block)
         body = body[i+1:]
 
-            
 
+            
 
             
 
