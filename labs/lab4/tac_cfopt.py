@@ -29,15 +29,14 @@ class BasicBlock():
         label = instructions[0]
         assert label["opcode"] == 'label', 'Incorrect beginning of basic block'
         self._label = label["args"][0]
-        end = instructions[-1]
-        if end["opcode"] == 'ret':
-            self._end = 'ret'
-        elif end["opcode"] == 'jmp':
-            jcc = self.instructions[-2]
-            assert jcc["opcode"] in conditional_jumps
-            self._end = jcc["args"][0]
-        else:
-            raise ValueError('Incorrect end of basic block')
+
+        self._destinations = []
+        for instr in self.instructions[1:]:
+            if instr['opcode'] in conditional_jumps:
+                self._destinations.append(instr['args'][1])
+            elif instr['opcode'] == 'jmp':
+                self._destinations.append(instr['args'][0])
+
         self._prev = []
         self._succ = []
     
