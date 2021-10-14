@@ -16,24 +16,36 @@ from typing import List
 conditional_jumps = [] ## list of cond jump instructions
 
 class BasicBlock():
-    def __init__(self, instructions, prev, succ) -> None:
+    def __init__(self, instructions) -> None:
+        '''
+        instructions -- list of tac instructions
+        prev -- predecessor(s) of the block
+        succ -- successor(s) of the block'''
         assert isinstance(instructions, list)
-        assert isinstance(prev, BasicBlock)
-        assert isinstance(succ, BasicBlock)
         self.instructions = instructions
-        self.prev = prev
-        self.succ = succ
+        self._prev = []
+        self._succ = []
     
     @property
     def prev(self):
-        return self.prev
+        return self._prev
 
     @property
     def succ(self):
-        return self.succ
+        return self._succ
+
+    def add_prev(self, prev):
+        '''Add BasisBlock to list of predecessors'''
+        assert isinstance(prev, BasicBlock)
+        self._prev.append(prev)
+
+    def add_succ(self, succ):
+        '''Add BasicBlock to list of successors'''
+        assert isinstance(succ, BasicBlock)
+        self._succ.append(succ)
 
 
-def build_basic_blocks(body):
+def build_basic_blocks(body: list) -> List[BasicBlock]:
     '''
     1. Add an entry label before first instruction if needed.
     2. For jumps, add a label after the instruction if one doesn’t already exist.
@@ -83,7 +95,9 @@ def build_basic_blocks(body):
 
 
 
-def build_cfg(basic_blocks: List):
+def build_cfg(basic_blocks: List[BasicBlock]) -> BasicBlock:
+    '''Given a list of basic blocks construct the 
+    cfg of the procedure'''
     pass
 
 def apply_control_flow_simplification(cfg):
