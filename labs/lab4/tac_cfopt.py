@@ -113,15 +113,18 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
             
 
 
-
-
 def build_cfg(basic_blocks: List[BasicBlock]) -> BasicBlock:
     '''Given a list of basic blocks construct the 
     cfg of the procedure. Assume that the first block in the
     list is the entry block'''
     entry_block = basic_blocks[0] 
-    # assert first_block.instructions[0].opcode == 'label', first_block.instructions[0].opcode
-    # assert first_block.instructions[0].args[0] == 'Lentry'
+    current_block = entry_block
+    while True:
+        next_label = current_block.end
+        next_block = next(block for block in basic_blocks if block.label == next_label)
+        current_block.add_succ(next_block)
+        next_block.add_prev(current_block)
+
 
 
     return entry_block
