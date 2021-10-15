@@ -105,19 +105,19 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
         else:
             body_labelled.append(instr)
 
-    i, j = 0, 1
+    block_start, block_end = 0, 1
     block_list = []
-    while j < len(body_labelled):
-        while body_labelled[j]['opcode'] not in ['jmp', 'ret', 'label'] + conditional_jumps:
-            j += 1
-        if body_labelled[j]['opcode'] in ['jmp', 'ret'] + conditional_jumps:
-            block_list.append(BasicBlock(body_labelled[i:j+1]))
-            i = j + 1
-            j += 2
+    while block_end < len(body_labelled):
+        while body_labelled[block_end]['opcode'] not in ['jmp', 'ret', 'label'] + conditional_jumps:
+            block_end += 1
+        if body_labelled[block_end]['opcode'] in ['jmp', 'ret'] + conditional_jumps:
+            block_list.append(BasicBlock(body_labelled[block_start:block_end+1]))
+            block_start = block_end + 1
+            block_end += 2
         else:  # Label
-            block_list.append(BasicBlock(body_labelled[i:j]))
-            i = j
-            j += 1
+            block_list.append(BasicBlock(body_labelled[block_start:block_end]))
+            block_start = block_end
+            block_end += 1
 
     for i, block in enumerate(block_list):
         if block.instructions[-1]['opcode'] not in ['jmp', 'ret']:
