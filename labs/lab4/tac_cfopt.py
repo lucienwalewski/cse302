@@ -32,14 +32,10 @@ class BasicBlock():
         self._label = label["args"][0]
 
         self._destinations = []
-        for instr in self.instructions[1:]:
-            if instr['opcode'] in conditional_jumps:
-                self._destinations.append(instr['args'][1])
-            elif instr['opcode'] == 'jmp':
-                self._destinations.append(instr['args'][0])
-
+        self.update_dest()
         self._prev = []
         self._succ = []
+        self.cfg = False
 
     @property
     def prev(self):
@@ -56,6 +52,15 @@ class BasicBlock():
     @property
     def destinations(self):
         return self._destinations
+
+    def update_dest(self):
+
+        for instr in self.instructions[1:]:
+            if instr['opcode'] in conditional_jumps:
+                self._destinations.append(instr['args'][1])
+            elif instr['opcode'] == 'jmp':
+                self._destinations.append(instr['args'][0])
+        
 
     def add_prev(self, prev):
         '''Add BasisBlock to list of predecessors'''
@@ -121,29 +126,29 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
     for i, block in enumerate(block_list):
         if block.instructions[-1]['opcode'] not in ['jmp', 'ret']:
-            block.instructions.append([{'opcode': 'jmp', 'args':
-                                        block_list[i+1].instructions[0]['args'], 'result': []}])
-
+            block.instructions.append({'opcode': 'jmp', 'args':
+                                        block_list[i+1].instructions[0]['args'], 'result': []})
+            block.update_dest()
     return block_list
 
 
-def build_cfg(basic_blocks: list[BasicBlock]) -> BasicBlock:
+def build_cfg(current_block, basic_blocks):
     '''Given a list of basic blocks construct the 
-    cfg of the procedure. Assume that the first block in the
-    list is the entry block'''
-    entry_block = basic_blocks[0]
-    current_block = entry_block
-    while True:
-        for dest in current_block.destinations:
-            dest_block = next(
-                (block for block in basic_blocks if block.label == dest), None)
-            dest_block.add_prev(current_block)
-            current_block.add_succ(dest_block)
-            if dest_block is None:
-                break
-            current_block
+    cfg of the procedure.'''
+    
+    current_block.cfg = True
 
-    return entry_block
+  
+    for dest_block in [basic_block for basic_block in basic_blocks if basic_block.label in current_block.destinations] :
+    
+        dest_block = dest_block if dest_block.cfg else build_cfg(dest_block, basic_blocks) 
+        dest_block.add_prev(current_block)
+        current_block.add_succ(dest_block)
+
+    print([ba.cfg for ba in basic_blocks])
+    
+
+    return current_block
 
 
 def apply_control_flow_simplification(cfg):
@@ -157,7 +162,9 @@ def serialize(cfg):
 def optimize(json_tac):
     body = json_tac["body"]
     basic_blocks = build_basic_blocks(body)
-    # cfg = build_cfg(basic_blocks)
+    entry_blocks = basic_blocks[0]
+    cfg = build_cfg(entry_blocks,basic_blocks)
+
     # cfg_optimized = apply_control_flow_simplification(cfg)
     # serialized_tac = serialize(cfg_optimized)
 
