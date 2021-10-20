@@ -227,11 +227,10 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     return block_list
 
 
-def optimize(json_tac: list) -> list:
+def optimize(body: list) -> list:
     '''Given an input list of TAC instructions, 
     optimize the TAC and output a new list of TAC
     instructions'''
-    body = json_tac["body"]
     basic_blocks = build_basic_blocks(body)
     entry_block = basic_blocks[0].label
     cfg = CFG(entry_block, basic_blocks)
