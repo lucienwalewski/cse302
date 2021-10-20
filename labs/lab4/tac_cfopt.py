@@ -11,7 +11,7 @@ CFG inference from linearized TAC
 import sys
 import argparse
 import json
-from typing import List
+from typing import List, Tuple
 
 
 __last_label = 0
@@ -76,6 +76,12 @@ class CFG():
         '''Return the block with input label "label"'''
         return self._block_map[label]
 
+    def successors(self, label: str):
+        return iter(self._fwd[label])
+
+    def predecessors(self, label: str):
+        return iter(self._bwd[label])
+
     def add_node(self, block):
         pass
 
@@ -91,6 +97,36 @@ class CFG():
         for origin, dests in self._fwd.items():
             for dest in dests:
                 self._bwd[dest].add(origin)
+
+    def _coalesce(self) -> None:
+        merged_blocks = []
+        for b1, dests in self._fwd.items():
+            if len(dests) == 1:
+                b2 = next(iter(dests))
+                if len(self._bwd[b2]) == 1:
+                    # self._merge(b1, b2)
+                    merged_blocks.append((b1, b2))
+        self._merge(merged_blocks)
+
+    def _merge(self, merged_blocks: List[Tuple[str, str]]) -> None:
+        for b1, b2 in merged_blocks:
+            instructions = self._block_map[b1].instructions[:-1] \
+                + self._block_map[b2].instructions
+            self._block_map[b1] = BasicBlock(instructions)
+            del self._block_map[b2]
+            self._fwd[b1] = self._fwd[b2]
+            del self._fwd[b2]
+            for succ in self._fwd[b1]:
+                self._bwd[succ].remove(b2)
+                self._bwd[succ].add(b1)
+            del self._bwd[b2]
+
+    def optimize(self) -> None:
+        self._coalesce()
+
+    def serialize(self) -> list:
+        '''Serialize the cfg and return the tac'''
+        pass
 
 
 def _fresh_label() -> int:
@@ -118,7 +154,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
     # Add entry label if not present
     if body[0]['opcode'] != 'label':
-        body[:0] = [{"opcode": "label", "args": [
+        body[: 0] = [{"opcode": "label", "args": [
             _fresh_label()], "result": []}]
 
     # Add labels after jumps if necessary
@@ -140,11 +176,12 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
             block_end += 1
         if body_labelled[block_end]['opcode'] in ['jmp', 'ret'] + conditional_jumps:
             block_list.append(BasicBlock(
-                body_labelled[block_start:block_end+1]))
+                body_labelled[block_start: block_end+1]))
             block_start = block_end + 1
             block_end += 2
         else:  # Label
-            block_list.append(BasicBlock(body_labelled[block_start:block_end]))
+            block_list.append(BasicBlock(
+                body_labelled[block_start: block_end]))
             block_start = block_end
             block_end += 1
     # Edge case for tac ending with label
@@ -166,18 +203,18 @@ def apply_control_flow_simplification(cfg):
     pass
 
 
-def serialize(cfg):
-    pass
-
-
 def optimize(json_tac):
     body = json_tac["body"]
     basic_blocks = build_basic_blocks(body)
     entry_block = basic_blocks[0]
     cfg = CFG(entry_block, basic_blocks)
-
+    print(cfg['%.L1'].instructions)
+    cfg.optimize()
+    print(cfg._block_map.keys())
+    print(cfg._fwd.keys())
+    print(cfg._bwd.keys())
     cfg_optimized = apply_control_flow_simplification(cfg)
-    serialized_tac = serialize(cfg_optimized)
+    serialized_tac = cfg.serialize()
 
 
 if __name__ == '__main__':
