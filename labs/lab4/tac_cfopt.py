@@ -97,8 +97,6 @@ class CFG():
                     self._bwd[dest] = {origin}
                 else:
                     self._bwd[dest].add(origin)
-        # print(self._block_map.keys(), self._fwd.keys(),
-        #       self._bwd.keys(), sep='\n\n')
 
 
 def _fresh_label() -> int:
@@ -155,7 +153,9 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
             block_list.append(BasicBlock(body_labelled[block_start:block_end]))
             block_start = block_end
             block_end += 1
-    # block_list.append(BasicBlock(body_labelled[block_start:block_end]))
+    if block_start == len(body_labelled) - 1 and body_labelled[block_start]['opcode'] == 'label':
+        body_labelled.append({'opcode': 'ret', 'args': [], 'result': []})
+        block_list.append(BasicBlock(body_labelled[block_start:]))
 
     # Add explicit jumps for fall-through
     for i, block in enumerate(block_list):
@@ -184,7 +184,7 @@ def optimize(json_tac):
     basic_blocks = build_basic_blocks(body)
     entry_block = basic_blocks[0]
     cfg = CFG(entry_block, basic_blocks)
-    print(cfg._fwd)
+    # print(cfg._fwd)
 
     # cfg_optimized = apply_control_flow_simplification(cfg)
     # serialized_tac = serialize(cfg_optimized)
