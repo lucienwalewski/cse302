@@ -87,16 +87,10 @@ class CFG():
         for block in self._block_map:
             for succ in self._block_map[block].succ:
                 self._fwd[block].add(succ)
-                # if succ not in self._fwd:
-                #     self._fwd[succ] = set()
-                #     self._bwd[succ] = set()
 
         for origin, dests in self._fwd.items():
             for dest in dests:
-                if dest not in self._bwd:
-                    self._bwd[dest] = {origin}
-                else:
-                    self._bwd[dest].add(origin)
+                self._bwd[dest].add(origin)
 
 
 def _fresh_label() -> int:
@@ -153,6 +147,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
             block_list.append(BasicBlock(body_labelled[block_start:block_end]))
             block_start = block_end
             block_end += 1
+    # Edge case for tac ending with label
     if block_start == len(body_labelled) - 1 and body_labelled[block_start]['opcode'] == 'label':
         body_labelled.append({'opcode': 'ret', 'args': [], 'result': []})
         block_list.append(BasicBlock(body_labelled[block_start:]))
@@ -177,17 +172,12 @@ def serialize(cfg):
 
 def optimize(json_tac):
     body = json_tac["body"]
-    # for instr in body:
-    #     if instr['opcode'] == 'label':
-    #         print(instr['args'])
-    # print(body)
     basic_blocks = build_basic_blocks(body)
     entry_block = basic_blocks[0]
     cfg = CFG(entry_block, basic_blocks)
-    # print(cfg._fwd)
 
-    # cfg_optimized = apply_control_flow_simplification(cfg)
-    # serialized_tac = serialize(cfg_optimized)
+    cfg_optimized = apply_control_flow_simplification(cfg)
+    serialized_tac = serialize(cfg_optimized)
 
 
 if __name__ == '__main__':
