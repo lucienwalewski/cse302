@@ -65,7 +65,7 @@ class BasicBlock():
 
 
 class CFG():
-    def __init__(self, entry_block: BasicBlock, blocks: List[BasicBlock]) -> None:
+    def __init__(self, entry_block: str, blocks: List[BasicBlock]) -> None:
         self._entry_block = entry_block
         self._block_map = {block.label: block for block in blocks}
         self._fwd = {label: set() for label in self._block_map}
@@ -99,16 +99,17 @@ class CFG():
                 self._bwd[dest].add(origin)
 
     def _coalesce(self) -> None:
+        '''Coalesce all linear blocks'''
         merged_blocks = []
         for b1, dests in self._fwd.items():
             if len(dests) == 1:
                 b2 = next(iter(dests))
                 if len(self._bwd[b2]) == 1:
-                    # self._merge(b1, b2)
                     merged_blocks.append((b1, b2))
         self._merge(merged_blocks)
 
     def _merge(self, merged_blocks: List[Tuple[str, str]]) -> None:
+        '''Given a list of coalescable blocks, updated the cfg'''
         for b1, b2 in merged_blocks:
             instructions = self._block_map[b1].instructions[:-1] \
                 + self._block_map[b2].instructions
@@ -121,12 +122,39 @@ class CFG():
                 self._bwd[succ].add(b1)
             del self._bwd[b2]
 
+    def _uce(self) -> None:
+        '''Perform Unreachable Code Elimination'''
+        visited_blocks = self._uce_traversal(self._entry_block, set())
+        unreachable_blocks = self._block_map.keys() - visited_blocks
+        for block in unreachable_blocks:
+            del self._block_map[block]
+            if block in self._fwd:
+                del self._fwd[block]
+            if block in self._bwd:
+                del self._bwd[block]
+
+    def _uce_traversal(self, block: str, visited_blocks: set) -> set:
+        '''Perform DFS on the cfg and return all the visited blocks'''
+        visited_blocks.add(block)
+        for block in self._fwd[block]:
+            if block not in visited_blocks:
+                visited_blocks.add(block)
+                visited_blocks = self._uce_traversal(block, visited_blocks)
+        return visited_blocks
+
     def optimize(self) -> None:
+        '''Apply the available optimization routines'''
         self._coalesce()
+        self._uce()
 
     def serialize(self) -> list:
         '''Serialize the cfg and return the tac'''
-        pass
+        tac = self._block_map[self._entry_block].instructions
+        entry = self._block_map.pop(self._entry_block)
+        for block in self._block_map.values():
+            tac += block.instructions
+        self._block_map[self._entry_block] = entry
+        return tac
 
 
 def _fresh_label() -> int:
@@ -199,22 +227,20 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     return block_list
 
 
-def apply_control_flow_simplification(cfg):
-    pass
-
-
-def optimize(json_tac):
+def optimize(json_tac: list) -> list:
+    '''Given an input list of TAC instructions, 
+    optimize the TAC and output a new list of TAC
+    instructions'''
     body = json_tac["body"]
     basic_blocks = build_basic_blocks(body)
-    entry_block = basic_blocks[0]
+    entry_block = basic_blocks[0].label
     cfg = CFG(entry_block, basic_blocks)
-    print(cfg['%.L1'].instructions)
     cfg.optimize()
-    print(cfg._block_map.keys())
-    print(cfg._fwd.keys())
-    print(cfg._bwd.keys())
-    cfg_optimized = apply_control_flow_simplification(cfg)
+    # print(cfg._block_map.keys()) # Do not delete - useful for debugging
+    # print(cfg._fwd.keys())
+    # print(cfg._bwd.keys())
     serialized_tac = cfg.serialize()
+    return serialized_tac
 
 
 if __name__ == '__main__':
