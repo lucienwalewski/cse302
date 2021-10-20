@@ -10,6 +10,7 @@ Requires: a working gcc
 """
 
 import json
+import sys
 from ast2tac import Instr
 from typing import List
 import sys
@@ -78,11 +79,13 @@ def tac_to_asm(tac_instrs):
     temp_map = dict()
     asm = []
     for instr in tac_instrs:
-        opcode = instr.opcode
-        args = instr.args
-        result = instr.result
+        opcode = instr["opcode"]
+        args = instr["args"]
+        result = instr["result"]
         if opcode == 'nop':
             pass
+        elif opcode == "ret" :
+            asm.append(f'retq')
         elif opcode == 'const':
             assert len(args) == 1 and isinstance(args[0], int)
             result = lookup_temp(result, temp_map)
@@ -166,6 +169,7 @@ def compile_tac(tac: List[Instr], fname: str, write: bool=True):
 
 
 def compile_tac_from_json(fname):
+
     assert fname.endswith('.tac.json')
     tjs = None
     with open(fname, 'rb') as fp:
@@ -173,6 +177,7 @@ def compile_tac_from_json(fname):
     assert isinstance(tjs, list) and len(tjs) == 1, tjs
     tjs = tjs[0]
     assert 'proc' in tjs and tjs['proc'] == '@main', tjs
+
     asm = ['\t' + line for line in tac_to_asm(tjs['body'])]
     asm[:0] = [f'\t.section .rodata',
                f'.lprintfmt:',
@@ -184,3 +189,6 @@ def compile_tac_from_json(fname):
     with open(sname, 'w') as afp:
         print(*asm, file=afp, sep='\n')
     print(f'{fname} -> {sname}')
+
+
+
