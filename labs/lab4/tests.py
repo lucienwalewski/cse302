@@ -22,42 +22,50 @@ def test_tac_optimization():
             tac = json.load(fp)
         tac = tac[0]['body']
 
-        ## get optimized tac
+        # get optimized tac
         optimized_tac = optimize(tac)
-        with open("optim/"+file, 'w') as file_write:
+        optim_fname = 'optim/' + file[:-9] + '_optim.tac.json'
+        # Dump tac json
+        with open(optim_fname, 'w') as file_write:
             json.dump([{'proc': '@main', 'body': optimized_tac}], file_write)
+        print(f'{file} -> {optim_fname}')
         
-        ## compile optimized tac
-        compile_tac_from_json("optim/"+file)
-        cmd = ['gcc', '-o', "optim/"+file[:-4] + "exe", 'bx_runtime.c',  "optim/"+file[:-4]+"s"]
+        # compile optimized tac
+        compile_tac_from_json(optim_fname)
+        cmd = ['gcc', '-o', optim_fname[:-9], 'bx_runtime.c',  optim_fname[:-9] + '.s']
         p = subprocess.Popen(cmd)
-        print(f'{"optim/"+file[:-4]+"s"} -> {"optim/"+file[:-4] + "exe"}')
+        p.wait()
+        # cmd = ['rm', optim_fname[:-9] + '.s']
+        # p = subprocess.Popen(cmd)
+        # p.wait()
+        print(f'{optim_fname[:-5]}.s -> {optim_fname[:-5]}')
+
+
         
 
-        ## compile original tac
+        # # compile original tac
         compile_tac_from_json(file)
-        cmd = ['gcc', '-o', file[:-4]+"exe", 'bx_runtime.c', file[:-4] + "s"]
+        cmd = ['gcc', '-o', file[:-9], 'bx_runtime.c', file[:-9] + ".s"]
         p = subprocess.Popen(cmd)
-        print(f'{file[:-4]+"s"} -> {file[:-4]+"exe"}')
+        print(f'{file[:-9]+".s"} -> {file[:-9]}')
 
        
-        ## run and display the output of optimized tac
-        cmd = ["optim/"+file[:-4]+"exe"]
-        output1 = subprocess.Popen( cmd, stdout=subprocess.PIPE ).communicate()[0]
-        print()
-        print("output for optimized procedure : ")
-        print(output1)
+        # # run and display the output of optimized tac
+        # cmd = ["optim/"+file[:-4]+"exe"]
+        # output1 = subprocess.Popen( cmd, stdout=subprocess.PIPE ).communicate()[0]
+        # print("\noutput for optimized procedure : ")
+        # print(output1)
 
-        ## run and display the output of original tac
-        cmd = ["./" +file[:-4]+"exe"]
-        output2 = subprocess.Popen( cmd, stdout=subprocess.PIPE ).communicate()[0]
-        print()
-        print("output for original procedure : ")
-        print(output2)
+        # ## run and display the output of original tac
+        # cmd = ["./" +file[:-4]+"exe"]
+        # output2 = subprocess.Popen( cmd, stdout=subprocess.PIPE ).communicate()[0]
+        # print()
+        # print("output for original procedure : ")
+        # print(output2)
 
-        ## compare 
-        print()
-        print("Optimized tac incorrect." if output1!=output2 else "Optimized tac correct")
+        # ## compare 
+        # print()
+        # print("Optimized tac incorrect." if output1!=output2 else "Optimized tac correct")
 
 
 

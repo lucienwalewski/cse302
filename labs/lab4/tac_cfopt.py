@@ -111,15 +111,17 @@ class CFG():
     def _merge(self, merged_blocks: List[Tuple[str, str]]) -> None:
         '''Given a list of coalescable blocks, updated the cfg'''
         for b1, b2 in merged_blocks:
+            print(b2)
             instructions = self._block_map[b1].instructions[:-1] \
                 + self._block_map[b2].instructions
+            print(instructions[-1])
             self._block_map[b1] = BasicBlock(instructions)
-            del self._block_map[b2]
-            self._fwd[b1] = self._fwd[b2]
-            del self._fwd[b2]
-            for succ in self._fwd[b1]:
+            for succ in self._fwd[b2]:
                 self._bwd[succ].remove(b2)
                 self._bwd[succ].add(b1)
+            self._fwd[b1] = self._fwd[b2]
+            del self._block_map[b2]
+            del self._fwd[b2]
             del self._bwd[b2]
 
     def _uce(self) -> None:
@@ -161,7 +163,7 @@ def _fresh_label() -> int:
     '''Obtain fresh label'''
     global __last_label
     __last_label += 1
-    t = f'%.Lb{__last_label}'
+    t = f'%.L{__last_label}'
     return t
 
 
@@ -212,17 +214,21 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
                 body_labelled[block_start: block_end]))
             block_start = block_end
             block_end += 1
+
     # Edge case for tac ending with label
     if block_start == len(body_labelled) - 1 and body_labelled[block_start]['opcode'] == 'label':
-        body_labelled.append({'opcode': 'ret', 'args': [], 'result': []})
         block_list.append(BasicBlock(body_labelled[block_start:]))
 
+
     # Add explicit jumps for fall-through
-    for i, block in enumerate(block_list):
+    for i, block in enumerate(block_list[:-1]):
         if block.instructions[-1]['opcode'] not in ['jmp', 'ret']:
             block.instructions.append({'opcode': 'jmp', 'args':
-                                       block_list[i+1].instructions[0]['args'], 'result': []})
-            block.add_succ(block_list[i+1].instructions[0]['args'][0])
+                                       [block_list[i+1].label], 'result': []})
+            block.add_succ(block_list[i+1].label)
+
+    for bb in block_list:
+        print(bb.instructions, '\n')
 
     return block_list
 

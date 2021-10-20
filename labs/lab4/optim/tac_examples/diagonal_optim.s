@@ -7,7 +7,7 @@ main:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $120, %rsp
-	.Lb12:
+	.L12:
 	movq $20, -8(%rbp)
 	movq $0, -16(%rbp)
 	movq $0, -24(%rbp)
@@ -23,13 +23,12 @@ main:
 	movq $0, %r11
 	cmpq %r11, -32(%rbp)
 	je .L3
-	jmp .Lb13
-	.Lb13:
+	jmp .L13
+	.L13:
 	.L4:
 	jmp .L5
 	.L3:
 	.L2:
-	retq
 	.L5:
 	movq -8(%rbp), %r11
 	movq %r11, -48(%rbp)
@@ -54,8 +53,8 @@ main:
 	movq $0, %r11
 	cmpq %r11, -56(%rbp)
 	jg .L9
-	jmp .Lb15
-	.Lb15:
+	jmp .L15
+	.L15:
 	.L10:
 	jmp .L11
 	.L9:

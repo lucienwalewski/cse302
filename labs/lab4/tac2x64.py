@@ -161,7 +161,6 @@ def compile_tac(tac: List[Instr], fname: str, write: bool=True):
                    f'\t.text',
                    f'\t.globl main',
                    f'main:']
-        xname = fname[:-3] + '.exe'
         sname = fname[:-3] + '.s'
         with open(sname, 'w') as afp:
             print(*asm, file=afp, sep='\n')
@@ -169,15 +168,12 @@ def compile_tac(tac: List[Instr], fname: str, write: bool=True):
 
 
 def compile_tac_from_json(fname):
-
     assert fname.endswith('.tac.json')
-    tjs = None
     with open(fname, 'rb') as fp:
         tjs = json.load(fp)
     assert isinstance(tjs, list) and len(tjs) == 1, tjs
     tjs = tjs[0]
     assert 'proc' in tjs and tjs['proc'] == '@main', tjs
-
     asm = ['\t' + line for line in tac_to_asm(tjs['body'])]
     asm[:0] = [f'\t.section .rodata',
                f'.lprintfmt:',
@@ -185,7 +181,7 @@ def compile_tac_from_json(fname):
                f'\t.text',
                f'\t.globl main',
                f'main:']
-    sname = fname[:-5] + '.s'
+    sname = fname[:-9] + '.s'
     with open(sname, 'w') as afp:
         print(*asm, file=afp, sep='\n')
     print(f'{fname} -> {sname}')
