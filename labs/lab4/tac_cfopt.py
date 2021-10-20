@@ -30,12 +30,9 @@ class BasicBlock():
         label = instructions[0]
         assert label["opcode"] == 'label', 'Incorrect beginning of basic block'
         self._label = label["args"][0]
-
-        self._destinations = []
-        self.update_dest()
-        self._prev = []
-        self._succ = []
-        self.cfg = False
+        self._prev = set()
+        self._succ = set()
+        self.update_succ()
 
     @property
     def prev(self):
@@ -49,28 +46,59 @@ class BasicBlock():
     def label(self):
         return self._label
 
-    @property
-    def destinations(self):
-        return self._destinations
-
-    def update_dest(self):
-
+    def update_succ(self):
+        '''Iterates over instructions and adds labels
+        and jumps to list of destinations'''
         for instr in self.instructions[1:]:
             if instr['opcode'] in conditional_jumps:
-                self._destinations.append(instr['args'][1])
+                self._succ.add(instr['args'][1])
             elif instr['opcode'] == 'jmp':
-                self._destinations.append(instr['args'][0])
-        
+                self._succ.add(instr['args'][0])
 
-    def add_prev(self, prev):
+    def add_prev(self, prev: str):
         '''Add BasisBlock to list of predecessors'''
-        assert isinstance(prev, BasicBlock)
-        self._prev.append(prev)
+        self._prev.add(prev)
 
-    def add_succ(self, succ):
+    def add_succ(self, succ: str):
         '''Add BasicBlock to list of successors'''
-        assert isinstance(succ, BasicBlock)
-        self._succ.append(succ)
+        self._succ.add(succ)
+
+
+class CFG():
+    def __init__(self, entry_block: BasicBlock, blocks: List[BasicBlock]) -> None:
+        self._entry_block = entry_block
+        self._block_map = {block.label: block for block in blocks}
+        self._fwd = {label: set() for label in self._block_map}
+        self._bwd = {label: set() for label in self._block_map}
+        self._construct_cfg()
+
+    def __getitem__(self, label: str) -> BasicBlock:
+        '''Return the block with input label "label"'''
+        return self._block_map[label]
+
+    def add_node(self, block):
+        pass
+
+    def add_edge(self, label_from, label_to):
+        pass
+
+    def _construct_cfg(self) -> None:
+        '''Constructs the cfg'''
+        for block in self._block_map:
+            for succ in self._block_map[block].succ:
+                self._fwd[block].add(succ)
+                # if succ not in self._fwd:
+                #     self._fwd[succ] = set()
+                #     self._bwd[succ] = set()
+
+        for origin, dests in self._fwd.items():
+            for dest in dests:
+                if dest not in self._bwd:
+                    self._bwd[dest] = {origin}
+                else:
+                    self._bwd[dest].add(origin)
+        # print(self._block_map.keys(), self._fwd.keys(),
+        #       self._bwd.keys(), sep='\n\n')
 
 
 def _fresh_label() -> int:
@@ -96,10 +124,12 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     global __last_label
     __last_label = find_largest_label(body)
 
+    # Add entry label if not present
     if body[0]['opcode'] != 'label':
         body[:0] = [{"opcode": "label", "args": [
             _fresh_label()], "result": []}]
 
+    # Add labels after jumps if necessary
     body_labelled = []
     for i, instr in enumerate(body):
         if instr['opcode'] in conditional_jumps + ['jmp']:
@@ -110,45 +140,31 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
         else:
             body_labelled.append(instr)
 
+    # Create list of BasicBlocks
     block_start, block_end = 0, 1
     block_list = []
     while block_end < len(body_labelled):
         while body_labelled[block_end]['opcode'] not in ['jmp', 'ret', 'label'] + conditional_jumps:
             block_end += 1
         if body_labelled[block_end]['opcode'] in ['jmp', 'ret'] + conditional_jumps:
-            block_list.append(BasicBlock(body_labelled[block_start:block_end+1]))
+            block_list.append(BasicBlock(
+                body_labelled[block_start:block_end+1]))
             block_start = block_end + 1
             block_end += 2
         else:  # Label
             block_list.append(BasicBlock(body_labelled[block_start:block_end]))
             block_start = block_end
             block_end += 1
+    # block_list.append(BasicBlock(body_labelled[block_start:block_end]))
 
+    # Add explicit jumps for fall-through
     for i, block in enumerate(block_list):
         if block.instructions[-1]['opcode'] not in ['jmp', 'ret']:
             block.instructions.append({'opcode': 'jmp', 'args':
-                                        block_list[i+1].instructions[0]['args'], 'result': []})
-            block.update_dest()
+                                       block_list[i+1].instructions[0]['args'], 'result': []})
+            block.add_succ(block_list[i+1].instructions[0]['args'][0])
+
     return block_list
-
-
-def build_cfg(current_block, basic_blocks):
-    '''Given a list of basic blocks construct the 
-    cfg of the procedure.'''
-    
-    current_block.cfg = True
-
-  
-    for dest_block in [basic_block for basic_block in basic_blocks if basic_block.label in current_block.destinations] :
-    
-        dest_block = dest_block if dest_block.cfg else build_cfg(dest_block, basic_blocks) 
-        dest_block.add_prev(current_block)
-        current_block.add_succ(dest_block)
-
-    print([ba.cfg for ba in basic_blocks])
-    
-
-    return current_block
 
 
 def apply_control_flow_simplification(cfg):
@@ -161,9 +177,14 @@ def serialize(cfg):
 
 def optimize(json_tac):
     body = json_tac["body"]
+    # for instr in body:
+    #     if instr['opcode'] == 'label':
+    #         print(instr['args'])
+    # print(body)
     basic_blocks = build_basic_blocks(body)
-    entry_blocks = basic_blocks[0]
-    cfg = build_cfg(entry_blocks,basic_blocks)
+    entry_block = basic_blocks[0]
+    cfg = CFG(entry_block, basic_blocks)
+    print(cfg._fwd)
 
     # cfg_optimized = apply_control_flow_simplification(cfg)
     # serialized_tac = serialize(cfg_optimized)
