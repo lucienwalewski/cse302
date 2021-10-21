@@ -33,6 +33,7 @@ class BasicBlock():
         self._prev = set()
         self._succ = set()
         self.update_succ()
+        self._empty_body = True if len(self.instructions) == 2 else False
 
     @property
     def prev(self):
@@ -71,6 +72,7 @@ class CFG():
         self._fwd = {label: set() for label in self._block_map}
         self._bwd = {label: set() for label in self._block_map}
         self._construct_cfg()
+        self._empty_blocks = {block for block in self._block_map if self._block_map[block]._empty_body}
 
     def __getitem__(self, label: str) -> BasicBlock:
         '''Return the block with input label "label"'''
@@ -111,11 +113,13 @@ class CFG():
     def _merge(self, merged_blocks: List[Tuple[str, str]]) -> None:
         '''Given a list of coalescable blocks, updated the cfg'''
         for b1, b2 in merged_blocks:
-            print(b2)
             instructions = self._block_map[b1].instructions[:-1] \
                 + self._block_map[b2].instructions
-            print(instructions[-1])
             self._block_map[b1] = BasicBlock(instructions)
+            if b2 in self._empty_blocks:
+                self._empty_blocks.remove(b2)
+            if self._block_map[b1]._empty_body:
+                self._empty_blocks.add(b1)
             for succ in self._fwd[b2]:
                 self._bwd[succ].remove(b2)
                 self._bwd[succ].add(b1)
@@ -134,6 +138,8 @@ class CFG():
                 del self._fwd[block]
             if block in self._bwd:
                 del self._bwd[block]
+            if block in self._empty_blocks:
+                self._empty_blocks.remove(block)
 
     def _uce_traversal(self, block: str, visited_blocks: set) -> set:
         '''Perform DFS on the cfg and return all the visited blocks'''
@@ -143,6 +149,21 @@ class CFG():
                 visited_blocks.add(block)
                 visited_blocks = self._uce_traversal(block, visited_blocks)
         return visited_blocks
+        
+    def _jump_threading_sequencing(self) -> None:
+        '''Sequence a linear sequence of blocks'''
+        sequences = {}  # Key is first block
+        for bi in self._empty_blocks:
+            dests = self._fwd[bi] # Might have to replace with get
+            if len(dests) == 1:
+                bj = next(iter(dests))
+                if len(self._bwd[bj]) == 1 and bj in self._empty_blocks:
+                    self._find_sequence(bi, bj)
+
+    def _find_sequence(self, bi: str, bj: str) -> list:
+        '''Given two empty linear blocks, find the sequence
+        of empty linear blocks they belong to'''
+        pass
 
     def optimize(self) -> None:
         '''Apply the available optimization routines'''
