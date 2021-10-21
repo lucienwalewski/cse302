@@ -254,7 +254,6 @@ def p_expr_uminus(p):
     '''expr : MINUS expr %prec UMINUS'''
     p[0] = OpApp(p.lineno(2), 'UMINUS', [p[2]])
 
-
 # Error rule for syntax errors
 def p_error(p):
     if p is None:
