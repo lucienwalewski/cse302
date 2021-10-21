@@ -11,7 +11,7 @@ CFG inference from linearized TAC
 import sys
 import argparse
 import json
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 
 __last_label = 0
@@ -72,7 +72,8 @@ class CFG():
         self._fwd = {label: set() for label in self._block_map}
         self._bwd = {label: set() for label in self._block_map}
         self._construct_cfg()
-        self._empty_blocks = {block for block in self._block_map if self._block_map[block]._empty_body}
+        self._empty_blocks = {
+            block for block in self._block_map if self._block_map[block]._empty_body}
 
     def __getitem__(self, label: str) -> BasicBlock:
         '''Return the block with input label "label"'''
@@ -149,26 +150,33 @@ class CFG():
                 visited_blocks.add(block)
                 visited_blocks = self._uce_traversal(block, visited_blocks)
         return visited_blocks
-        
+
     def _jump_threading_sequencing(self) -> None:
         '''Sequence a linear sequence of blocks'''
-        sequences = {}  # Key is first block
-        for bi in self._empty_blocks:
-            dests = self._fwd[bi] # Might have to replace with get
-            if len(dests) == 1:
-                bj = next(iter(dests))
-                if len(self._bwd[bj]) == 1 and bj in self._empty_blocks:
-                    self._find_sequence(bi, bj)
 
-    def _find_sequence(self, bi: str, bj: str) -> list:
-        '''Given two empty linear blocks, find the sequence
-        of empty linear blocks they belong to'''
-        pass
+        changed = True
+        while changed:
+            changed = False
+            empty_pairs = []
+            for bi in self._block_map.keys():
+                dests = self._fwd[bi]  # Might have to replace with get
+                if len(dests) == 1:
+                    bj = next(iter(dests))
+                    if len(self._bwd[bj]) == 1 \
+                            and len(self._block_map[bj].instructions) == 2 \
+                            and self._block_map[bj].instructions[-1]['opcode'] == 'jmp':
+                        empty_pairs.append((bi, bj))
+            if len(empty_pairs):
+                changed = True
+                while empty_pairs:
+                    bi, bj = empty_pairs.pop()
+                    self._fwd[bi] = self._fwd[bj]
 
     def optimize(self) -> None:
         '''Apply the available optimization routines'''
         self._coalesce()
         self._uce()
+        self._jump_threading_sequencing()
 
     def serialize(self) -> list:
         '''Serialize the cfg and return the tac'''
@@ -238,8 +246,8 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
     # Edge case for tac ending with label
     if block_start == len(body_labelled) - 1 and body_labelled[block_start]['opcode'] == 'label':
+        body_labelled.append({'opcode': 'ret', 'args': [], 'result': []})
         block_list.append(BasicBlock(body_labelled[block_start:]))
-
 
     # Add explicit jumps for fall-through
     for i, block in enumerate(block_list[:-1]):
@@ -247,9 +255,6 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
             block.instructions.append({'opcode': 'jmp', 'args':
                                        [block_list[i+1].label], 'result': []})
             block.add_succ(block_list[i+1].label)
-
-    for bb in block_list:
-        print(bb.instructions, '\n')
 
     return block_list
 
@@ -283,7 +288,7 @@ if __name__ == '__main__':
         opts = ap.parse_args(sys.argv[1:])
 
     json_tac_file = open(opts.fname[0])
-    json_tac = json.load(json_tac_file)[0]
+    json_tac = json.load(json_tac_file)[0]['body']
     optimized_tac = optimize(json_tac)
 
     if opts.o:
