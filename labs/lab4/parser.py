@@ -29,8 +29,7 @@ precedence = (
 
 def p_program(p):
     '''program : decl_star'''
-    # p[0] = Program(p.lineno(5), [], p[5])
-    p[0] = Program(p.lineno(1), [], p[1])
+    p[0] = Program(p.lineno(1), [], p[1]) # List of Decl (Vardecl or Procdec)
 
 
 def p_decl_star(p):
@@ -55,7 +54,7 @@ def p_ty(p):
 
 def p_procdecl(p):
     '''procdecl : DEF IDENT LPAREN params RPAREN return_type block'''
-    pass
+    p[0] = Procdecl()
 
 def p_params(p):
     '''params : 

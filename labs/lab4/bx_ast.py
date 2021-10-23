@@ -49,6 +49,12 @@ class Stmt(Node):
 
 
 ####################
+# Declarations
+
+
+
+
+####################
 # Blocks
 
 class Block(Stmt):
@@ -203,40 +209,6 @@ class OpApp(Expr):
 # Statements
 
 
-class Vardecl(Stmt):
-    '''Variable declarations'''
-
-    def __init__(self, sloc, var: Variable, expr: Expr):
-        '''
-        var -- a Variable instance
-        expr -- an Expr instance
-        '''
-        super().__init__(sloc)
-        self.var = var
-        self.expr = expr
-
-    def type_check(self, var_tys):
-        if self.var.name in var_tys[-1]:
-            raise ValueError(
-                f'Variable {self.var.name} already declared in same scope at line {self.sloc}')
-        self.expr.type_check(var_tys)
-        self.var.ty = self.expr.ty
-        var_tys[-1][self.var.name] = self.var.ty
-
-    def syntax_check(self, fname):
-        global declarations
-        self.expr.expr_check(fname)
-        if self.var.name in declarations:
-            raise ValueError(f'{fname}:line {self.sloc}:Error:Duplicate declaration of variable "{self.var.name}"\n'f'{fname}:line {declarations_line[self.var.name]}:Info:Earlier declaration of "{self.var.name}"')
-
-        declarations.append(self.var.name)
-        declarations_line[self.var.name] = self.sloc
-        
-    @property
-    def js_obj(self):
-        return {'tag': 'Vardecl',
-                'lhs': self.var.js_obj,
-                'rhs': self.expr.js_obj}
 
 
 class IfElse(Stmt):
@@ -369,14 +341,71 @@ class Print(Stmt):
         return {'tag': 'Print',
                 'arg': self.arg.js_obj}
 
+
+
+class Decl(Node):
+    def __init__(self) -> None:
+        pass
+
+
+
+class Vardecl(Decl):
+    '''Variable declarations'''
+
+    def __init__(self, sloc, var: Variable, expr: Expr):
+        '''
+        var -- a Variable instance
+        expr -- an Expr instance
+        '''
+        super().__init__(sloc)
+        self.var = var
+        self.expr = expr
+
+    def type_check(self, var_tys):
+        if self.var.name in var_tys[-1]:
+            raise ValueError(
+                f'Variable {self.var.name} already declared in same scope at line {self.sloc}')
+        self.expr.type_check(var_tys)
+        self.var.ty = self.expr.ty
+        var_tys[-1][self.var.name] = self.var.ty
+
+    def syntax_check(self, fname):
+        global declarations
+        self.expr.expr_check(fname)
+        if self.var.name in declarations:
+            raise ValueError(f'{fname}:line {self.sloc}:Error:Duplicate declaration of variable "{self.var.name}"\n'f'{fname}:line {declarations_line[self.var.name]}:Info:Earlier declaration of "{self.var.name}"')
+
+        declarations.append(self.var.name)
+        declarations_line[self.var.name] = self.sloc
+        
+    @property
+    def js_obj(self):
+        return {'tag': 'Vardecl',
+                'lhs': self.var.js_obj,
+                'rhs': self.expr.js_obj}
+
+class Ty(Node):
+    def __init__(self, sloc):
+        super().__init__(sloc)
+
+class Param(Node):
+    def __init__(self, sloc):
+        super().__init__(sloc)
+
+class Procdecl(Decl):
+    def __init__(self, sloc, name: str, params: list[Param], return_type: Ty, block: Block) -> None:
+        super().__init__()
+
+
+
 ####################
 # Programs
 
 class Program(Node):
-    def __init__(self, sloc, lvars: list, block: Block):
+    def __init__(self, sloc, decls: list[Decl]):
         super().__init__(sloc)
-        self.block = block
         self.lvars = lvars
+        self.decls = decls
         self.type_check([])
 
     def type_check(self, var_tys):
@@ -390,5 +419,5 @@ class Program(Node):
     def js_obj(self):
         return {'tag': 'Program',
                 'vars': self.lvars,
-                'block': self.block.js_obj}
+                'decls': self.decls.js_obj}
 
