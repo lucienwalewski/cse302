@@ -10,9 +10,7 @@ Returns:
 
 from ply import lex
 
-reserved = {'print': 'PRINT',
-            'main': 'MAIN',
-            'def': 'DEF',
+reserved = {'def': 'DEF',
             'var': 'VAR',
             'int': 'INT',
             'bool': 'BOOL',
@@ -23,8 +21,8 @@ reserved = {'print': 'PRINT',
             'continue': 'CONTINUE',
             'true': 'TRUE',
             'false': 'FALSE',
-            'return': 'RETURN',
-            'void': 'VOID'}
+            'void': 'VOID',
+            'return': 'RETURN'}
 
 # The ‘tokens' tuple must be present and list all the valid tokens
 tokens = (

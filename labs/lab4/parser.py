@@ -33,11 +33,12 @@ def p_program(p):
 
 def p_decl_star(p):
     '''decl_star : 
-                  | decl_star decl'''
+                 | decl_star decl'''
     if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1] + p[2]
+        p[0] = p[1]
+        p[0].append(p[2])
 
 def p_decl(p):
     '''decl : vardecl
@@ -57,7 +58,7 @@ def p_params(p):
     '''params : 
               | param params_star'''
     if len(p) == 1:
-        p[0] = []
+        p[0] = None
     else:
         p[0] = [p[1]] + p[2]
 
@@ -263,17 +264,39 @@ def p_expr_parens(p):
     '''expr : LPAREN expr RPAREN'''
     p[0] = p[2]
 
+def p_expr_procedure_calls(p):
+    '''expr : IDENT LPAREN exprs RPAREN'''
+
+def p_exprs(p):
+    '''exprs :
+             | expr exprs_star'''
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = [p[1]] + p[2]
+    
+def p_exprs_star(p):
+    '''exprs_star : 
+                  | exprs_star COMMA expr'''
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1]
+        p[1].append(p[2])
+
+
 
 def p_expr_uminus(p):
     '''expr : MINUS expr %prec UMINUS'''
     p[0] = OpApp(p.lineno(2), 'UMINUS', [p[2]])
+    # FIXME
 
 # Error rule for syntax errors
-# def p_error(p):
-#     if p is None:
-#         raise SyntaxError('Syntax error')
+def p_error(p):
+    if p is None:
+        raise SyntaxError('Syntax error')
 
-#     raise SyntaxError(f'Syntax error at line {p.lineno}')
+    raise SyntaxError(f'Syntax error at line {p.lineno}')
 
 
 parser = yacc.yacc()
