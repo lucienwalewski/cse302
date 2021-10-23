@@ -2,7 +2,7 @@
 Parser that takes file produced by lexer and produces
 an ast.
 
-Usage: Library
+Usage: 
 
 Returns:
 """
@@ -29,8 +29,7 @@ precedence = (
 
 def p_program(p):
     '''program : decl_star'''
-    p[0] = Program(p.lineno(1), [], p[1]) # List of Decl (Vardecl or Procdec)
-
+    p[0] = Program(p.lineno(1), p[1]) 
 
 def p_decl_star(p):
     '''decl_star : 
@@ -48,7 +47,7 @@ def p_decl(p):
 def p_ty(p):
     '''ty : INT
           | BOOL'''
-    p[0] = Ty(p.lineno(0), p[1])
+    p[0] = Ty(p.lineno(1), p[1])
 
 def p_procdecl(p):
     '''procdecl : DEF IDENT LPAREN params RPAREN return_type block'''
@@ -57,18 +56,19 @@ def p_procdecl(p):
 def p_params(p):
     '''params : 
               | param params_star'''
-    if len(p) == 0:
+    if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1] + p[2]
+        p[0] = [p[1]] + p[2]
 
 def p_params_star(p):
     '''params_star : 
                    | params_star COMMA param'''
-    if len(p) == 0:
+    if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1] + p[3] 
+        p[0] = p[1] 
+        p[0].append(p[3])
 
 def p_return_type(p):
     '''return_type : 
@@ -80,7 +80,7 @@ def p_return_type(p):
 
 def p_param(p):
     '''param : IDENT ident_star COLON ty'''
-    p[0] = Param(p.lineno(0), p[2], p[4])
+    p[0] = Param(p.lineno(1), p[2], p[4])
 
 def p_ident_star(p):
     '''ident_star : 
@@ -88,8 +88,8 @@ def p_ident_star(p):
     if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1] + p[2]
-
+        p[0] = p[1]
+        p[0].append(p[3])
 
 def p_stmt(p):
     '''stmt : vardecl
@@ -137,7 +137,7 @@ def p_ifrest(p):
               | ELSE ifelse
               | ELSE block'''
     if len(p) == 1:
-        p[0] = Block(p.lineno(0), [])
+        p[0] = Block(p.lineno(1), [])
     else:
         p[0] = p[2]
 
@@ -269,11 +269,11 @@ def p_expr_uminus(p):
     p[0] = OpApp(p.lineno(2), 'UMINUS', [p[2]])
 
 # Error rule for syntax errors
-def p_error(p):
-    if p is None:
-        raise SyntaxError('Syntax error')
+# def p_error(p):
+#     if p is None:
+#         raise SyntaxError('Syntax error')
 
-    raise SyntaxError(f'Syntax error at line {p.lineno}')
+#     raise SyntaxError(f'Syntax error at line {p.lineno}')
 
 
 parser = yacc.yacc()
