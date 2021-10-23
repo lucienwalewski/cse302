@@ -319,38 +319,75 @@ class Assign(Stmt):
                 'lhs': self.lhs.js_obj,
                 'rhs': self.rhs.js_obj}
 
-
-class Print(Stmt):
+class Eval(Stmt):
+    '''Evaluations'''
     def __init__(self, sloc, expr: Expr):
-        """
-        expr -- an Expr instance
-        """
         super().__init__(sloc)
         self.expr = expr
 
     def type_check(self, var_tys):
-        self.expr.type_check(var_tys)
-        if self.expr.ty != 'int':
-            raise TypeError(f'Cannot print expr of type {self.expr.ty} at line {self.sloc}')
+        # FIXME
+        return super().type_check(var_tys)
 
     def syntax_check(self, fname):
-        self.expr.expr_check(fname)
+        # FIXMe
+        pass
 
     @property
     def js_obj(self):
-        return {'tag': 'Print',
-                'arg': self.arg.js_obj}
+        # FIXME
+        pass
+
+class Return(Stmt):
+    def __init__(self, sloc, expr: Union[Expr, None]):
+        super().__init__(sloc)
+        self.expr = expr
+
+    def type_check(self, var_tys):
+        # FIXME
+        return super().type_check(var_tys)
+
+    def syntax_check(self, fname):
+        # FIXMe
+        pass
+
+    @property
+    def js_obj(self):
+        # FIXME
+        pass
+
+# class Print(Stmt):
+#     def __init__(self, sloc, expr: Expr):
+#         """
+#         expr -- an Expr instance
+#         """
+#         super().__init__(sloc)
+#         self.expr = expr
+
+#     def type_check(self, var_tys):
+#         self.expr.type_check(var_tys)
+#         if self.expr.ty != 'int':
+#             raise TypeError(f'Cannot print expr of type {self.expr.ty} at line {self.sloc}')
+
+#     def syntax_check(self, fname):
+#         self.expr.expr_check(fname)
+
+#     @property
+#     def js_obj(self):
+#         return {'tag': 'Print',
+#                 'arg': self.arg.js_obj}
 
 
 
 class Decl(Node):
-    def __init__(self) -> None:
-        pass
+    '''Superclass of declarations'''
+    def __init__(self, sloc):
+        super().__init__(sloc)
 
 
 
-class Vardecl(Decl):
-    '''Variable declarations'''
+class Varinit(Decl):
+    '''Variable init'''
 
     def __init__(self, sloc, var: Variable, expr: Expr):
         '''
@@ -380,21 +417,49 @@ class Vardecl(Decl):
         
     @property
     def js_obj(self):
-        return {'tag': 'Vardecl',
+        return {'tag': 'Varinit',
                 'lhs': self.var.js_obj,
                 'rhs': self.expr.js_obj}
 
 class Ty(Node):
-    def __init__(self, sloc):
+    def __init__(self, sloc, ty: str):
         super().__init__(sloc)
+        assert type in ['int', 'bool']
+        self.ty = ty
+
+    @property
+    def js_obj(self):
+        # FIXME
+        pass
+
+class Vardecl(Decl):
+    '''Variable decarations'''
+
+    def __init__(self, sloc, vars: List[Varinit], ty: Ty) -> None:
+        super().__init__()
+        assert len(vars) > 0
+        self.vars = vars
+        self.ty = ty
+
+
+
+
+
 
 class Param(Node):
-    def __init__(self, sloc):
+    def __init__(self, sloc, names: List[str], ty: Ty):
         super().__init__(sloc)
+        assert len(names) > 0
+        self.names = names
+        self.ty = ty
 
 class Procdecl(Decl):
-    def __init__(self, sloc, name: str, params: list[Param], return_type: Ty, block: Block) -> None:
+    def __init__(self, sloc, name: str, params: list[Param], return_type: Union[Ty, None], block: Block) -> None:
         super().__init__()
+        self.params = params
+        self.return_type = return_type
+        self.block = block
+
 
 
 
@@ -404,19 +469,21 @@ class Procdecl(Decl):
 class Program(Node):
     def __init__(self, sloc, decls: list[Decl]):
         super().__init__(sloc)
-        self.lvars = lvars
         self.decls = decls
         self.type_check([])
 
     def type_check(self, var_tys):
         self.block.type_check(var_tys)
+        # FIXME
 
     def syntax_check(self, fname):
         fname = fname
         self.block.syntax_check(fname)
+        # FIXME
 
     @property
     def js_obj(self):
+        # FIXME
         return {'tag': 'Program',
                 'vars': self.lvars,
                 'decls': self.decls.js_obj}

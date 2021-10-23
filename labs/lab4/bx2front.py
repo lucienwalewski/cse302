@@ -25,9 +25,11 @@ if __name__ == '__main__':
         except SyntaxError as serr:
             print(serr)
             exit(1)
+        else:
+            print('Successfully lexed and parsed')
 
     ## type_check
-    prog.syntax_check(filename) 
+    # prog.syntax_check(fname) 
 
 
 

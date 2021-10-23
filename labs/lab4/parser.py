@@ -38,47 +38,57 @@ def p_decl_star(p):
     if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1]
-        p[0].append(p[2])
-
+        p[0] = p[1] + p[2]
 
 def p_decl(p):
-    '''stmt : vardecl
+    '''decl : vardecl
             | procdecl'''
     p[0] = p[1]
 
 def p_ty(p):
     '''ty : INT
           | BOOL'''
-    p[0] = p[1]
+    p[0] = Ty(p.lineno(0), p[1])
 
 def p_procdecl(p):
     '''procdecl : DEF IDENT LPAREN params RPAREN return_type block'''
-    p[0] = Procdecl()
+    p[0] = Procdecl(p.lineno(1), p[2], p[4], p[6], p[7])
 
 def p_params(p):
     '''params : 
               | param params_star'''
-    pass
+    if len(p) == 0:
+        p[0] = []
+    else:
+        p[0] = p[1] + p[2]
 
 def p_params_star(p):
     '''params_star : 
                    | params_star COMMA param'''
-    pass
+    if len(p) == 0:
+        p[0] = []
+    else:
+        p[0] = p[1] + p[3] 
 
 def p_return_type(p):
     '''return_type : 
                    | COLON ty'''
-    pass
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[2]
 
 def p_param(p):
-    '''IDENT ident_star COLON ty'''
-    pass
+    '''param : IDENT ident_star COLON ty'''
+    p[0] = Param(p.lineno(0), p[2], p[4])
 
 def p_ident_star(p):
     '''ident_star : 
                   | ident_star COMMA IDENT'''
-    pass
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1] + p[2]
 
 
 def p_stmt(p):
@@ -94,31 +104,33 @@ def p_stmt(p):
 
 def p_vardecl(p):
     '''vardecl : VAR varinits COLON ty SEMICOLON'''
-    # p[0] = Vardecl(p.lineno(3), Variable(p.lineno(2), p[2], 'int'), p[4])
-    pass
+    p[0] = Vardecl(p.lineno(1), p[2], p[4])
+
 
 def p_varinits(p):
     '''varinits : IDENT EQUAL expr varinits_star'''
-    pass
+    p[0] = [Varinit(p.lineno(1), p[1], p[3])] + p[4]
     
 def p_varinits_star(p):
     '''varinits_star : 
                      | varinits_star COMMA IDENT EQUAL expr'''
-    pass
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1] + [Varinit(p.lineno(1), p[3], p[5])]
+
 
 def p_assign(p):
     '''assign : IDENT EQUAL expr SEMICOLON'''
-    # p[0] = Assign(p.lineno(1), Variable(p.lineno(1), p[1], 'int'), p[3])
-    pass
+    p[0] = Assign(p.lineno(1), Variable(p.lineno(1), p[1], 'int'), p[3])
 
 def p_eval(p):
     '''eval : expr SEMICOLON'''
-    pass
+    p[0] = Eval(p.lineno(1), p[1])
 
 def p_ifelse(p):
     '''ifelse : IF LPAREN expr RPAREN block ifrest'''
-    # p[0] = IfElse(p.lineno(1), p[3], p[5], p[6])
-    pass
+    p[0] = IfElse(p.lineno(1), p[3], p[5], p[6])
 
 def p_ifrest(p):
     '''ifrest : 
@@ -143,7 +155,10 @@ def p_jump(p):
 def p_return(p):
     '''return : RETURN SEMICOLON
               | RETURN expr SEMICOLON'''
-    pass
+    if len(p) == 3:
+        p[0] = Return(p.lineno(1), None)
+    else:
+        p[0] = Return(p.lineno(1), p[2])
 
 
 def p_block(p):
