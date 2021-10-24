@@ -330,7 +330,7 @@ class Eval(Stmt):
         return super().type_check(var_tys)
 
     def syntax_check(self, fname):
-        # FIXMe
+        # FIXME
         pass
 
     @property
@@ -424,7 +424,7 @@ class Varinit(Decl):
 class Ty(Node):
     def __init__(self, sloc, ty: str):
         super().__init__(sloc)
-        assert type in ['int', 'bool']
+        assert ty in ['int', 'bool']
         self.ty = ty
 
     @property
@@ -436,7 +436,7 @@ class Vardecl(Decl):
     '''Variable decarations'''
 
     def __init__(self, sloc, vars: List[Varinit], ty: Ty) -> None:
-        super().__init__()
+        super().__init__(sloc)
         assert len(vars) > 0
         self.vars = vars
         self.ty = ty
@@ -455,7 +455,7 @@ class Param(Node):
 
 class Procdecl(Decl):
     def __init__(self, sloc, name: str, params: list[Param], return_type: Union[Ty, None], block: Block) -> None:
-        super().__init__()
+        super().__init__(sloc)
         self.params = params
         self.return_type = return_type
         self.block = block
@@ -467,18 +467,20 @@ class Procdecl(Decl):
 # Programs
 
 class Program(Node):
-    def __init__(self, sloc, decls: list[Decl]):
+    def __init__(self, sloc, decls: List[Decl]):
         super().__init__(sloc)
         self.decls = decls
         self.type_check([])
 
     def type_check(self, var_tys):
-        self.block.type_check(var_tys)
+        # self.block.type_check(var_tys)
+        pass
         # FIXME
 
     def syntax_check(self, fname):
         fname = fname
-        self.block.syntax_check(fname)
+        # self.block.syntax_check(fname)
+        pass
         # FIXME
 
     @property
