@@ -8,7 +8,7 @@ sys.path.append('../lab3')
 # sys.path.append('..')
 
 
-tac_path = 'tac_examples'
+tac_path = 'examples/lab4/tac_examples'
 tac_files = [os.path.join(dp, f)
              for dp, _, fn in os.walk(tac_path) for f in fn if f.endswith("tac.json")]
     
