@@ -70,7 +70,7 @@ class Block(Stmt):
         scopes.append(dict())
         for stmt in self.stmts:
             stmt.type_check(scopes)
-        scopes = scopes[:-1]
+        scopes.pop()
 
     def syntax_check(self, fname):
         for stmt in self.stmts:
@@ -521,6 +521,7 @@ class Procdecl(Decl):
         body_scope = global_scope[0][self.name][0]
         global_scope.append(body_scope)
         self.block.type_check(global_scope)
+        global_scope.pop()
 
 
 ####################
