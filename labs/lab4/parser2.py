@@ -75,7 +75,7 @@ def p_return_type(p):
     '''return_type : 
                    | COLON ty'''
     if len(p) == 1:
-        p[0] = []
+        p[0] = None
     else:
         p[0] = p[2]
 

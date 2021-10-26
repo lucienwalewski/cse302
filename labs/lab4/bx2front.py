@@ -2,7 +2,7 @@ import argparse
 import sys
 from ast2tac import Prog
 from lexer import lexer
-from parser import parser
+from parser2 import parser
 
 
 
@@ -27,9 +27,9 @@ if __name__ == '__main__':
             exit(1)
         else:
             print('Successfully lexed and parsed')
-
-    ## type_check
-    # prog.syntax_check(fname) 
+    print(prog.decls)
+    ##type_check
+    prog.syntax_check(opts.fname) 
 
 
 
