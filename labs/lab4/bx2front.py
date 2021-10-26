@@ -2,9 +2,7 @@ import argparse
 import sys
 from ast2tac import Prog
 from lexer import lexer
-from parser2 import parser
-
-
+from parser import parser
 
 
 if __name__ == '__main__':
@@ -15,9 +13,8 @@ if __name__ == '__main__':
                     help='The TAC(JSON) file to process')
     opts = ap.parse_args()
     assert(opts.fname[0].endswith(".bx"))
-    
 
-    ## parse bx 
+    # parse bx
 
     with open(opts.fname[0], 'r') as bx_file:
         try:
@@ -27,13 +24,7 @@ if __name__ == '__main__':
             exit(1)
         else:
             print('Successfully lexed and parsed')
-    print(prog.decls)
-    ##type_check
-    prog.syntax_check(opts.fname) 
-
-
-
-    
-
-
-    
+    prog.type_check_global()
+    print(prog.global_scope)
+    # type_check
+    # prog.syntax_check(opts.fname)

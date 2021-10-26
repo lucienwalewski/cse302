@@ -75,7 +75,7 @@ def p_return_type(p):
     '''return_type : 
                    | COLON ty'''
     if len(p) == 1:
-        p[0] = None
+        p[0] = Ty(p.lineno(0), 'void')
     else:
         p[0] = p[2]
 
@@ -110,7 +110,7 @@ def p_vardecl(p):
 
 def p_varinits(p):
     '''varinits : IDENT EQUAL expr varinits_star'''
-    p[0] = [Varinit(p.lineno(1), p[1], p[3])] + p[4]
+    p[0] = [Varinit(p.lineno(1), Variable(p.lineno(1), p[1]), p[3])] + p[4]
     
 def p_varinits_star(p):
     '''varinits_star : 
@@ -118,7 +118,7 @@ def p_varinits_star(p):
     if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1] + [Varinit(p.lineno(1), p[3], p[5])]
+        p[0] = p[1] + [Varinit(p.lineno(1), Variable(p.lineno(3), p[3]), p[5])]
 
 
 def p_assign(p):
@@ -157,7 +157,7 @@ def p_return(p):
     '''return : RETURN SEMICOLON
               | RETURN expr SEMICOLON'''
     if len(p) == 3:
-        p[0] = Return(p.lineno(1), None)
+        p[0] = Return(p.lineno(1), 'void')
     else:
         p[0] = Return(p.lineno(1), p[2])
 
@@ -266,7 +266,7 @@ def p_expr_parens(p):
 
 def p_expr_procedure_calls(p):
     '''expr : IDENT LPAREN exprs RPAREN'''
-    p[0] = Call(name=p[1], exprs=p[3])
+    p[0] = Call(p[1], p[3])
 
 
 def p_exprs(p):

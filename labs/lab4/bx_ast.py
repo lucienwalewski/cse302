@@ -16,10 +16,12 @@ __scopes = []
 declarations = []
 declarations_line = {}
 
+
 def reset():
     global declarations, declarations_line
     declarations = []
     declarations_line = {}
+
 
 class Node:
     """Superclass of all AST nodes"""
@@ -31,7 +33,7 @@ class Node:
         sloc -- source location linenumber
         """
         self.sloc = sloc
-    
+
 
 class Stmt(Node):
     """Superclass of all statements"""
@@ -51,8 +53,6 @@ class Stmt(Node):
 
 ####################
 # Declarations
-
-
 
 
 ####################
@@ -92,21 +92,23 @@ class Expr(Node):
 class Variable(Expr):
     """Program variable"""
 
-    def __init__(self, sloc, name: str, type: str):
+    def __init__(self, sloc, name: str, type: str = None):
         """
         name -- string representation of the name of the variable
         """
         super().__init__(sloc)
         # assert name in self.vardecls
         self.name = name
-        self.ty = type
+        if type:
+            self.ty = type
 
     def type_check(self, var_tys):
         pass
 
     def expr_check(self, fname):
         if self.name not in declarations:
-            raise ValueError(f'{fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
+            raise ValueError(
+                f'{fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
 
     @property
     def js_obj(self):
@@ -186,7 +188,7 @@ class OpApp(Expr):
                        } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'int'
         elif self.op in {'EQUALITY', 'DISEQUALITY',
-                         'LT', 'LEQ', 'GT', 'GEQ' 
+                         'LT', 'LEQ', 'GT', 'GEQ'
                          } and all([arg.ty == 'int' for arg in self.args]):
             self.ty = 'bool'
         elif self.op in {'BOOLAND', 'BOOLOR', 'BOOLNEG'
@@ -210,12 +212,10 @@ class OpApp(Expr):
 # Statements
 
 
-
-
 class IfElse(Stmt):
     def __init__(self, sloc, condition: Expr, block: Block, ifrest):
         '''
-        condition -- condition to enter the block 
+        condition -- condition to enter the block
         block -- list of statements to execute
         ifrest -- else blocks of type Block or IfElse
         '''
@@ -266,7 +266,6 @@ class While(Stmt):
     def syntax_check(self, fname):
         self.condition.expr_check(fname)
         self.block.syntax_check(fname)
-
 
     @property
     def js_obj(self):
@@ -320,8 +319,10 @@ class Assign(Stmt):
                 'lhs': self.lhs.js_obj,
                 'rhs': self.rhs.js_obj}
 
+
 class Eval(Stmt):
     '''Evaluations'''
+
     def __init__(self, sloc, expr: Expr):
         super().__init__(sloc)
         self.expr = expr
@@ -339,12 +340,12 @@ class Eval(Stmt):
         pass
 
 
-
 class Call(Expr):
     """Procedure call"""
 
-    def __init__(self, func, args):
-        self.func, self.args = func, args
+    def __init__(self, func, exprs):
+        self.func, self.exprs = func, exprs
+
     def type_check(self):
         if self.func == "print":
             assert len(self.args) == 1
@@ -355,14 +356,16 @@ class Call(Expr):
             elif arg.ty == "bool":
                 self.func = "__bx_print_bool"
             else:
-                raise TypeError(f'Cannot print() expressions of type: {arg.ty}')
+                raise TypeError(
+                    f'Cannot print() expressions of type: {arg.ty}')
         else:
-            #FIXME 
+            # FIXME
             pass
             # handle all other kinds of calls
 
+
 class Return(Stmt):
-    def __init__(self, sloc, expr: Union[Expr, None]):
+    def __init__(self, sloc, expr: Expr = None):
         super().__init__(sloc)
         self.expr = expr
 
@@ -371,10 +374,10 @@ class Return(Stmt):
         return super().type_check(var_tys)
 
     def syntax_check(self, fname):
-        # FIXMe
+        # FIXME
         pass
 
-    @property
+    @ property
     def js_obj(self):
         # FIXME
         pass
@@ -401,13 +404,11 @@ class Return(Stmt):
 #                 'arg': self.arg.js_obj}
 
 
-
 class Decl(Node):
     '''Superclass of declarations'''
+
     def __init__(self, sloc):
         super().__init__(sloc)
-
-
 
 
 class Varinit(Decl):
@@ -422,6 +423,15 @@ class Varinit(Decl):
         self.var = var
         self.expr = expr
 
+    def type_check_global(self, global_scope: dict) -> None:
+        '''Type check global variables and add type to global scope'''
+        # FIXME - Add line number information
+        if self.var.name in global_scope:
+            raise ValueError(f'Duplicate declaration of {self.var.name}')
+        if not isinstance(self.expr, (Number, Bool)):
+            raise ValueError(f'Global variables must be declared as constants')
+        global_scope[self.var.name] = self.expr.ty
+
     def type_check(self, var_tys):
         if self.var.name in var_tys[-1]:
             raise ValueError(
@@ -434,51 +444,58 @@ class Varinit(Decl):
         global declarations
         self.expr.expr_check(fname)
         if self.var.name in declarations:
-            raise ValueError(f'{fname}:line {self.sloc}:Error:Duplicate declaration of variable "{self.var.name}"\n'f'{fname}:line {declarations_line[self.var.name]}:Info:Earlier declaration of "{self.var.name}"')
+            raise ValueError(
+                f'{fname}:line {self.sloc}:Error:Duplicate declaration of variable "{self.var.name}"\n'f'{fname}:line {declarations_line[self.var.name]}:Info:Earlier declaration of "{self.var.name}"')
 
         declarations.append(self.var.name)
         declarations_line[self.var.name] = self.sloc
-        
-    @property
+
+    @ property
     def js_obj(self):
         return {'tag': 'Varinit',
                 'lhs': self.var.js_obj,
                 'rhs': self.expr.js_obj}
 
+
 class Ty(Node):
     def __init__(self, sloc, ty: str):
         super().__init__(sloc)
-        assert ty in ['int', 'bool']
-        self.ty = ty
+        assert ty in ['int', 'bool', 'void']  # Unnecessary
+        self.ty_str = ty
 
-    @property
+    @ property
     def js_obj(self):
         # FIXME
         pass
 
+
 class Vardecl(Decl):
     '''Variable decarations'''
 
-    def __init__(self, sloc, vars: List[Varinit], ty: Ty) -> None:
+    def __init__(self, sloc, varinits: List[Varinit], ty: Ty) -> None:
         super().__init__(sloc)
-        assert len(vars) > 0
-        self.vars = vars
+        assert len(varinits) > 0
+        self.varinits = varinits
         self.ty = ty
 
-    def type_check(sel,var_tysf):
-        if self.name in __scopes[-1]:
-            raise ValueError(f'Variable {self.name} already declared in same scope')
-        if len(__scopes) == 1:
-            # global vars can only have literals for initializers
-            assert isinstance(self.init, Number) or isinstance(self.init, Boolean)
-        self.init.type_check() # type check initializer before adding var
-        assert self.init.ty == ty
+    def type_check_global(self, global_scope: dict):
+        '''Type check global variables'''
+        for varinit in self.varinits:
+            varinit.type_check_global(global_scope)
+            if global_scope[varinit.var.name] != self.ty.ty_str:
+                raise ValueError(
+                    f'{varinit.var.name} of incorrect type. Expected {self.ty.ty_str}. Obtained {global_scope[varinit.var.name]}')
 
-        var_tys[-1][self.name] = self.ty # add var to innermost scop
+    # def type_check(self):
+        # if self.name in __scopes[-1]:
+        #     raise ValueError(f'Variable {self.name} already declared in same scope')
+        # if len(__scopes) == 1:
+        #     # global vars can only have literals for initializers
+        #     assert isinstance(self.init, Number) or isinstance(self.init, Boolean)
+        # self.init.type_check() # type check initializer before adding var
+        # assert self.init.ty == ty
 
-
-
-
+        # var_tys[-1][self.name] = self.ty # add var to innermost scop
 
 
 class Param(Node):
@@ -488,34 +505,44 @@ class Param(Node):
         self.names = names
         self.ty = ty
 
-    def type_check(self) :
+    def type_check_global(self):
+        '''Type check params as part of first phase of type-checking'''
+
+    def type_check(self):
         self.ty = self.ty.ty
-        
+
 
 class Procdecl(Decl):
-    def __init__(self, sloc, name: str, params: list[Param], return_type: Union[Ty, None], block: Block) -> None:
+    def __init__(self, sloc, name: str, params: list[Param], return_type: Ty, block: Block) -> None:
         super().__init__(sloc)
+        self.name = name
         self.params = params
         self.return_type = return_type
         self.block = block
-        self.name = name
-       
 
+    def type_check_global(self, global_scope: dict):
+        args_type = []
+        if self.params is not None:
+            for param in self.params:
+                for arg_name in param.names:
+                    args_type.append(param.ty.ty_str)
+        global_scope[self.name] = (args_type, self.return_type.ty_str)
 
-    def type_check(self,var_tys):
-        if self.name in var_tys[-1]:
-            raise ValueError(f'Variable {self.name} already declared in same scope')
-        if self.params :
-            for param in self.params :
-                param.type_check()
-                assert param.ty == "bool" or param.ty == "int"
-        assert isinstance(self.return_type, Ty) or not self.return_type 
-        var_tys[0][self.name] = ([param.ty for param in self.params] if self.params else [], self.return_type) # add var to innermost scope
-        print("ok")
+    # def type_check(self, var_tys):
+    #     if self.name in var_tys[-1]:
+    #         raise ValueError(
+    #             f'Variable {self.name} already declared in same scope')
+    #     if self.params:
+    #         for param in self.params:
+    #             param.type_check()
+    #             assert param.ty == "bool" or param.ty == "int"
+    #     var_tys[0][self.name] = ([param.ty for param in self.params] if self.params else [
+    #     ], self.return_type)  # add var to innermost scope
+    #     print("ok")
 
-
-        
-
+    def body_type_check(self, var_tys):
+        '''Type check the body of a procedure'''
+        pass
 
 
 ####################
@@ -525,23 +552,33 @@ class Program(Node):
     def __init__(self, sloc, decls: List[Decl]):
         super().__init__(sloc)
         self.decls = decls
-        self.type_check([{}])
+        # self.type_check([{}])
+        # self.type_check_global()
 
-    def type_check(self, var_tys):
-        for decl in self.decls :
-            decl.type_check(var_tys)
-        
+    def type_check_global(self):
+        '''Type check the declarations and add the types
+        to the global scope in the first phase of type-checking'''
+        global_scope = {}
+        for decl in self.decls:
+            decl.type_check_global(global_scope)
+        self.global_scope = global_scope
+
+    def type_check_bodies(self):
+        '''Type check the bodies of the procdecls in the
+        second phase of type-checking'''
+        for decl in self.decls:
+            if isinstance(decl, Procdecl):
+                decl.body_type_check(_)
 
     def syntax_check(self, fname):
-        #FIXME
+        # FIXME
         return
-        for decl in self.decls :
+        for decl in self.decls:
             decl.syntax_check()
 
-    @property
+    @ property
     def js_obj(self):
         # FIXME
         return {'tag': 'Program',
                 'vars': self.lvars,
                 'decls': self.decls.js_obj}
-
