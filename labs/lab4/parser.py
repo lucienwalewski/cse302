@@ -29,7 +29,8 @@ precedence = (
 
 def p_program(p):
     '''program : decl_star'''
-    p[0] = Program(p.lineno(1), p[1]) 
+    p[0] = Program(p.lineno(1), p[1])
+
 
 def p_decl_star(p):
     '''decl_star : 
@@ -40,19 +41,23 @@ def p_decl_star(p):
         p[0] = p[1]
         p[0].append(p[2])
 
+
 def p_decl(p):
     '''decl : vardecl
             | procdecl'''
     p[0] = p[1]
+
 
 def p_ty(p):
     '''ty : INT
           | BOOL'''
     p[0] = Ty(p.lineno(1), p[1])
 
+
 def p_procdecl(p):
     '''procdecl : DEF IDENT LPAREN params RPAREN return_type block'''
     p[0] = Procdecl(p.lineno(1), p[2], p[4], p[6], p[7])
+
 
 def p_params(p):
     '''params : 
@@ -62,14 +67,16 @@ def p_params(p):
     else:
         p[0] = [p[1]] + p[2]
 
+
 def p_params_star(p):
     '''params_star : 
                    | params_star COMMA param'''
     if len(p) == 1:
         p[0] = []
     else:
-        p[0] = p[1] 
+        p[0] = p[1]
         p[0].append(p[3])
+
 
 def p_return_type(p):
     '''return_type : 
@@ -79,9 +86,11 @@ def p_return_type(p):
     else:
         p[0] = p[2]
 
+
 def p_param(p):
     '''param : IDENT ident_star COLON ty'''
-    p[0] = Param(p.lineno(1), p[2], p[4])
+    p[0] = Param(p.lineno(1), [p[1]] + p[2], p[4])
+
 
 def p_ident_star(p):
     '''ident_star : 
@@ -91,6 +100,7 @@ def p_ident_star(p):
     else:
         p[0] = p[1]
         p[0].append(p[3])
+
 
 def p_stmt(p):
     '''stmt : vardecl
@@ -103,6 +113,7 @@ def p_stmt(p):
             | return'''
     p[0] = p[1]
 
+
 def p_vardecl(p):
     '''vardecl : VAR varinits COLON ty SEMICOLON'''
     p[0] = Vardecl(p.lineno(1), p[2], p[4])
@@ -111,7 +122,8 @@ def p_vardecl(p):
 def p_varinits(p):
     '''varinits : IDENT EQUAL expr varinits_star'''
     p[0] = [Varinit(p.lineno(1), Variable(p.lineno(1), p[1]), p[3])] + p[4]
-    
+
+
 def p_varinits_star(p):
     '''varinits_star : 
                      | varinits_star COMMA IDENT EQUAL expr'''
@@ -125,13 +137,16 @@ def p_assign(p):
     '''assign : IDENT EQUAL expr SEMICOLON'''
     p[0] = Assign(p.lineno(1), Variable(p.lineno(1), p[1], 'int'), p[3])
 
+
 def p_eval(p):
     '''eval : expr SEMICOLON'''
     p[0] = Eval(p.lineno(1), p[1])
 
+
 def p_ifelse(p):
     '''ifelse : IF LPAREN expr RPAREN block ifrest'''
     p[0] = IfElse(p.lineno(1), p[3], p[5], p[6])
+
 
 def p_ifrest(p):
     '''ifrest : 
@@ -153,11 +168,12 @@ def p_jump(p):
             | CONTINUE SEMICOLON'''
     p[0] = Jump(p.lineno(1), p[1])
 
+
 def p_return(p):
     '''return : RETURN SEMICOLON
               | RETURN expr SEMICOLON'''
     if len(p) == 3:
-        p[0] = Return(p.lineno(1), 'void')
+        p[0] = Return(p.lineno(1), None)
     else:
         p[0] = Return(p.lineno(1), p[2])
 
@@ -165,6 +181,7 @@ def p_return(p):
 def p_block(p):
     '''block : LBRACE stmts_star RBRACE'''
     p[0] = Block(p.lineno(2), p[2])
+
 
 def p_stmts_star(p):
     '''stmts_star : 
@@ -174,6 +191,7 @@ def p_stmts_star(p):
     else:
         p[0] = p[1]
         p[0].append(p[2])
+
 
 def p_expr_ident(p):
     '''expr : IDENT'''
@@ -264,6 +282,7 @@ def p_expr_parens(p):
     '''expr : LPAREN expr RPAREN'''
     p[0] = p[2]
 
+
 def p_expr_procedure_calls(p):
     '''expr : IDENT LPAREN exprs RPAREN'''
     p[0] = Call(p[1], p[3])
@@ -276,7 +295,8 @@ def p_exprs(p):
         p[0] = []
     else:
         p[0] = [p[1]] + p[2]
-    
+
+
 def p_exprs_star(p):
     '''exprs_star : 
                   | exprs_star COMMA expr'''
@@ -287,13 +307,14 @@ def p_exprs_star(p):
         p[1].append(p[2])
 
 
-
 def p_expr_uminus(p):
     '''expr : MINUS expr %prec UMINUS'''
     p[0] = OpApp(p.lineno(2), 'UMINUS', [p[2]])
     # FIXME
 
 # Error rule for syntax errors
+
+
 def p_error(p):
     if p is None:
         raise SyntaxError('Syntax error')
