@@ -266,8 +266,6 @@ def p_expr_parens(p):
 
 def p_expr_procedure_calls(p):
     '''expr : IDENT LPAREN exprs RPAREN'''
-    p[0] = Call(name=p[1], exprs=p[3])
-
 
 def p_exprs(p):
     '''exprs :

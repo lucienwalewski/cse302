@@ -12,6 +12,7 @@ A class hierarchy for the AST of the BX language.
 
 from typing import Type
 
+__scopes = []
 declarations = []
 declarations_line = {}
 
@@ -326,8 +327,7 @@ class Eval(Stmt):
         self.expr = expr
 
     def type_check(self, var_tys):
-        # FIXME
-        return super().type_check(var_tys)
+        self.expr.type_check()
 
     def syntax_check(self, fname):
         # FIXME
@@ -337,6 +337,29 @@ class Eval(Stmt):
     def js_obj(self):
         # FIXME
         pass
+
+
+
+class Call(Expr):
+    """Procedure call"""
+
+    def __init__(self, func, args):
+        self.func, self.args = func, args
+    def type_check(self):
+        if self.func == "print":
+            assert len(self.args) == 1
+            arg = self.args[0]
+            arg.type_check()
+            if arg.ty == "int":
+                self.func = "__bx_print_int"
+            elif arg.ty == "bool":
+                self.func = "__bx_print_bool"
+            else:
+                raise TypeError(f'Cannot print() expressions of type: {arg.ty}')
+        else:
+            #FIXME 
+            pass
+            # handle all other kinds of calls
 
 class Return(Stmt):
     def __init__(self, sloc, expr: Union[Expr, None]):
@@ -383,6 +406,7 @@ class Decl(Node):
     '''Superclass of declarations'''
     def __init__(self, sloc):
         super().__init__(sloc)
+
 
 
 
@@ -441,6 +465,17 @@ class Vardecl(Decl):
         self.vars = vars
         self.ty = ty
 
+    def type_check(sel,var_tysf):
+        if self.name in __scopes[-1]:
+            raise ValueError(f'Variable {self.name} already declared in same scope')
+        if len(__scopes) == 1:
+            # global vars can only have literals for initializers
+            assert isinstance(self.init, Number) or isinstance(self.init, Boolean)
+        self.init.type_check() # type check initializer before adding var
+        assert self.init.ty == ty
+
+        var_tys[-1][self.name] = self.ty # add var to innermost scop
+
 
 
 
@@ -453,13 +488,33 @@ class Param(Node):
         self.names = names
         self.ty = ty
 
+    def type_check(self) :
+        self.ty = self.ty.ty
+        
+
 class Procdecl(Decl):
     def __init__(self, sloc, name: str, params: list[Param], return_type: Union[Ty, None], block: Block) -> None:
         super().__init__(sloc)
         self.params = params
         self.return_type = return_type
         self.block = block
+        self.name = name
+       
 
+
+    def type_check(self,var_tys):
+        if self.name in var_tys[-1]:
+            raise ValueError(f'Variable {self.name} already declared in same scope')
+        if self.params :
+            for param in self.params :
+                param.type_check()
+                assert param.ty == "bool" or param.ty == "int"
+        assert isinstance(self.return_type, Ty) or not self.return_type 
+        var_tys[0][self.name] = ([param.ty for param in self.params] if self.params else [], self.return_type) # add var to innermost scope
+        print("ok")
+
+
+        
 
 
 
@@ -470,18 +525,18 @@ class Program(Node):
     def __init__(self, sloc, decls: List[Decl]):
         super().__init__(sloc)
         self.decls = decls
-        self.type_check([])
+        self.type_check([{}])
 
     def type_check(self, var_tys):
-        # self.block.type_check(var_tys)
-        pass
-        # FIXME
+        for decl in self.decls :
+            decl.type_check(var_tys)
+        
 
     def syntax_check(self, fname):
-        fname = fname
-        # self.block.syntax_check(fname)
-        pass
-        # FIXME
+        #FIXME
+        return
+        for decl in self.decls :
+            decl.syntax_check()
 
     @property
     def js_obj(self):
