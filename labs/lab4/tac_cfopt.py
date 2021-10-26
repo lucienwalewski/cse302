@@ -117,14 +117,15 @@ class CFG():
             instructions = self._block_map[b1].instructions[:-1] \
                 + self._block_map[b2].instructions
             self._block_map[b1] = BasicBlock(instructions)
-            if b2 in self._empty_blocks:
-                self._empty_blocks.remove(b2)
-            if self._block_map[b1]._empty_body:
-                self._empty_blocks.add(b1)
+            # if b2 in self._empty_blocks:
+            #     self._empty_blocks.remove(b2)
+            # if self._block_map[b1]._empty_body:
+            #     self._empty_blocks.add(b1)
             for succ in self._fwd[b2]:
                 self._bwd[succ].remove(b2)
                 self._bwd[succ].add(b1)
             self._fwd[b1] = self._fwd[b2]
+        for _, b2 in merged_blocks:
             del self._block_map[b2]
             del self._fwd[b2]
             del self._bwd[b2]
@@ -176,7 +177,7 @@ class CFG():
         '''Apply the available optimization routines'''
         self._coalesce()
         self._uce()
-        self._jump_threading_sequencing()
+        # self._jump_threading_sequencing()
 
     def serialize(self) -> list:
         '''Serialize the cfg and return the tac'''
