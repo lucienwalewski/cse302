@@ -4,6 +4,8 @@
 //           and every multiple of 5 with 555
 //   except replace multiples of both 3 and 5 with 151515
 
+var x = 10, y = 15 : int; // Global variable to test type checking
+
 def fizzbuzz(cur, last : int) {
   while (cur <= last) {
     if (cur % 3 == 0) {
@@ -20,6 +22,8 @@ def fizzbuzz(cur, last : int) {
     cur = cur + 1;
   }
 }
+
+var z = true : bool;
 
 def main() {
   fizzbuzz(0, 100);
