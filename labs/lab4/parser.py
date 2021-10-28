@@ -172,10 +172,10 @@ def p_jump(p):
 def p_return(p):
     '''return : RETURN SEMICOLON
               | RETURN expr SEMICOLON'''
-    if len(p) == 3:
-        p[0] = Return(p.lineno(1), None)
-    else:
+    if len(p) == 4:
         p[0] = Return(p.lineno(1), p[2])
+    else:
+        p[0] = Return(p.lineno(1), None)
 
 
 def p_block(p):

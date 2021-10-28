@@ -21,10 +21,12 @@ def fizzbuzz(cur, last : int) {
     }
     cur = cur + 1;
   }
+  return;
 }
 
 var z = true : bool;
 
 def main() {
   fizzbuzz(0, 100);
+  
 }

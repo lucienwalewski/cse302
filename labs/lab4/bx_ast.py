@@ -42,7 +42,7 @@ class Stmt(Node):
         super().__init__(sloc)
         self.ty: Ty
 
-    def type_check(self, scopes: list[dict]):
+    def type_check(self, scopes: list[dict],return_type):
         pass
 
     def find_variable_type(self, var, scopes) -> str:
@@ -64,12 +64,12 @@ class Block(Stmt):
         super().__init__(sloc)
         self.stmts = stmts
 
-    def type_check(self, scopes: list[dict]):
+    def type_check(self, scopes: list[dict], return_type):
         '''Type check block by pushing new scope at start
         which is popped at the end'''
         scopes.append(dict())
         for stmt in self.stmts:
-            stmt.type_check(scopes)
+            stmt.type_check(scopes,return_type)
         scopes.pop()
 
     def syntax_check(self, fname):
@@ -230,14 +230,14 @@ class IfElse(Stmt):
         self.block = block
         self.ifrest = ifrest
 
-    def type_check(self, scopes: list[dict]) -> None:
+    def type_check(self, scopes: list[dict],return_type) -> None:
         '''Type check IfElse'''
         self.condition.type_check(scopes)
         if self.condition.ty.ty_str != 'bool':
             raise TypeError(
                 f'IfElse condition must be of type bool - cannot be of type {self.condition.ty} at line {self.sloc}')
-        self.block.type_check(scopes)
-        self.ifrest.type_check(scopes)
+        self.block.type_check(scopes,return_type)
+        self.ifrest.type_check(scopes,return_type)
 
     # def syntax_check(self, fname):
     #     self.condition.expr_check(fname)
@@ -262,12 +262,12 @@ class While(Stmt):
         self.condition = condition
         self.block = block
 
-    def type_check(self, scopes: list[dict]) -> None:
+    def type_check(self, scopes: list[dict],return_type) -> None:
         self.condition.type_check(scopes)
         if self.condition.ty.ty_str != 'bool':
             raise TypeError(
                 f'While condition must be of type bool - cannot be of type {self.condition.ty.ty_str} at line {self.sloc}')
-        self.block.type_check(scopes)
+        self.block.type_check(scopes,return_type)
 
     # def syntax_check(self, fname):
     #     self.condition.expr_check(fname)
@@ -285,7 +285,7 @@ class Jump(Stmt):
         super().__init__(sloc)
         self.op = op
 
-    def type_check(self, var_tys):
+    def type_check(self, var_tys,return_type):
         pass
 
     # def syntax_check(self, fname):
@@ -308,7 +308,7 @@ class Assign(Stmt):
         self.var = var
         self.expr = expr
 
-    def type_check(self, scopes: list[dict]) -> None:
+    def type_check(self, scopes: list[dict],return_type) -> None:
         '''Type check an assignment. Check that variable was previously
         declared and that types of expr and var match'''
         var_type = self.find_variable_type(self.var.name, scopes)
@@ -335,8 +335,8 @@ class Eval(Stmt):
         super().__init__(sloc)
         self.expr = expr
 
-    def type_check(self, scopes: list[dict]):
-        '''Type check the expression of an evaluation'''
+    def type_check(self, scopes: list[dict],return_type):
+        '''Type check the expression of an e,valuation'''
         self.expr.type_check(scopes)
 
     def syntax_check(self, fname):
@@ -374,16 +374,20 @@ class Call(Expr):
 
 
 class Return(Stmt):
-    def __init__(self, sloc, func: str, expr: Expr = None):
+    def __init__(self, sloc, expr: Expr):
         super().__init__(sloc)
         self.expr = expr
         if expr is None:
             self.ty = Ty(self.sloc, 'void')
 
-    def type_check(self, scopes: list[dict]) -> None:
+    def type_check(self, scopes: list[dict],return_type) -> None:
         if self.expr is not None:
             self.expr.type_check(scopes)
-            self.ty = self.expr.ty
+            self.ty = self.expr.ty  
+        if self.ty.ty_str != return_type.ty_str :
+            raise TypeError(
+                    f'"return value type {self.ty.ty_str} does not match the function type {return_type.ty_str}" ')
+        
 
     def syntax_check(self, fname):
         # FIXME
@@ -515,12 +519,13 @@ class Procdecl(Decl):
                 for arg_name in param.names:
                     args_type[arg_name] = param.ty.ty_str
         global_scope[self.name] = (args_type, self.return_type.ty_str)
+        
 
     def body_type_check(self, global_scope: list[dict]) -> None:
         '''Type check the body of a procedure'''
         body_scope = global_scope[0][self.name][0]
         global_scope.append(body_scope)
-        self.block.type_check(global_scope)
+        self.block.type_check(global_scope,self.return_type)
         global_scope.pop()
 
 
