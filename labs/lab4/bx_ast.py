@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from typing import Union, List
+import inspect
 
 """
 A class hierarchy for the AST of the BX language.
@@ -72,9 +73,6 @@ class Block(Stmt):
             stmt.type_check(scopes,return_type)
         scopes.pop()
 
-    def syntax_check(self, fname):
-        for stmt in self.stmts:
-            stmt.syntax_check(fname)
 
     @property
     def js_obj(self):
@@ -107,12 +105,21 @@ class Variable(Expr):
             self.ty = Ty(self.sloc, type)
 
     def type_check(self, scopes: list[dict]) -> None:
-        pass
-
-    def expr_check(self, fname) -> None:
-        if self.name not in declarations:
+        
+        if self.name not in get_declared_var(scopes) :
             raise ValueError(
-                f'{fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
+                f'{self.fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
+
+
+ 
+def get_declared_var(scopes) :
+    declared_var = []
+    for scope in scopes :
+        for key in scope.keys() :
+            if isinstance(scope[key],str) :
+                declared_var.append(key)
+    return declared_var
+
 
     @property
     def js_obj(self):
@@ -133,12 +140,12 @@ class Number(Expr):
         self.ty = Ty(self.sloc, 'int')
 
     def type_check(self, scopes: list[dict]) -> None:
-        pass
-
-    def expr_check(self, fname) -> None:
         if self.value < 0 or (self.value >> 63):
             raise ValueError(
-                f'{fname}:line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
+                f'line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
+
+  
+
 
     @property
     def js_obj(self):
@@ -160,8 +167,7 @@ class Bool(Expr):
     def type_check(self, scopes: list[dict]):
         pass
 
-    def expr_check(self, fname):
-        pass
+ 
 
     @property
     def js_obj(self):
@@ -203,9 +209,7 @@ class OpApp(Expr):
             raise TypeError(
                 f'Operation {self.op} not defined for arguments {self.args} with types {tuple([arg.ty.ty_str for arg in self.args])} at line {self.sloc}')
 
-    def expr_check(self, fname):
-        for arg in self.args:
-            arg.expr_check(fname)
+  
 
     @property
     def js_obj(self):
@@ -239,10 +243,7 @@ class IfElse(Stmt):
         self.block.type_check(scopes,return_type)
         self.ifrest.type_check(scopes,return_type)
 
-    # def syntax_check(self, fname):
-    #     self.condition.expr_check(fname)
-    #     self.block.syntax_check(fname)
-    #     self.ifrest.syntax_check(fname)
+ 
 
     @property
     def js_obj(self):
@@ -269,9 +270,6 @@ class While(Stmt):
                 f'While condition must be of type bool - cannot be of type {self.condition.ty.ty_str} at line {self.sloc}')
         self.block.type_check(scopes,return_type)
 
-    # def syntax_check(self, fname):
-    #     self.condition.expr_check(fname)
-    #     self.block.syntax_check(fname)
 
     @property
     def js_obj(self):
@@ -288,8 +286,6 @@ class Jump(Stmt):
     def type_check(self, var_tys,return_type):
         pass
 
-    # def syntax_check(self, fname):
-    #     pass
 
     @property
     def js_obj(self):
@@ -311,15 +307,14 @@ class Assign(Stmt):
     def type_check(self, scopes: list[dict],return_type) -> None:
         '''Type check an assignment. Check that variable was previously
         declared and that types of expr and var match'''
+        self.var.type_check(scopes)
         var_type = self.find_variable_type(self.var.name, scopes)
         self.expr.type_check(scopes)
         if var_type != self.expr.ty.ty_str:
             raise TypeError(
                 f"Assignment of variable '{self.var.name}' of type '{var_type}' to expr of type '{self.expr.ty.ty_str}' at line {self.sloc}")
 
-    # def syntax_check(self, fname):
-    #     self.expr.expr_check(fname)
-    #     self.var.expr_check(fname)
+
 
     @property
     def js_obj(self):
@@ -339,9 +334,6 @@ class Eval(Stmt):
         '''Type check the expression of an e,valuation'''
         self.expr.type_check(scopes)
 
-    def syntax_check(self, fname):
-        # FIXME
-        pass
 
     @property
     def js_obj(self):
@@ -455,15 +447,7 @@ class Varinit(Decl):
         self.var.ty = self.expr.ty
         scopes[-1][self.var.name] = self.var.ty.ty_str
 
-    def syntax_check(self, fname):
-        global declarations
-        self.expr.expr_check(fname)
-        if self.var.name in declarations:
-            raise ValueError(
-                f'{fname}:line {self.sloc}:Error:Duplicate declaration of variable "{self.var.name}"\n'f'{fname}:line {declarations_line[self.var.name]}:Info:Earlier declaration of "{self.var.name}"')
 
-        declarations.append(self.var.name)
-        declarations_line[self.var.name] = self.sloc
 
     @ property
     def js_obj(self):
