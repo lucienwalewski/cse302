@@ -35,6 +35,7 @@ class Node:
         """
         self.sloc = sloc
 
+
 class Ty(Node):
     def __init__(self, sloc, ty: str):
         super().__init__(sloc)
@@ -84,7 +85,6 @@ class Block(Stmt):
             stmt.type_check(scopes, return_type)
         scopes.pop()
 
-
     @property
     def js_obj(self):
         return {'tag': 'Block',
@@ -116,21 +116,19 @@ class Variable(Expr):
             self.ty = Ty(self.sloc, type)
 
     def type_check(self, scopes: list[dict], return_type: Ty) -> None:
-        
-        if self.name not in get_declared_var(scopes) :
+
+        if self.name not in get_declared_var(scopes):
             raise ValueError(
                 f'{self.fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
 
 
- 
-def get_declared_var(scopes) :
+def get_declared_var(scopes):
     declared_var = []
-    for scope in scopes :
-        for key in scope.keys() :
-            if isinstance(scope[key],str) :
+    for scope in scopes:
+        for key in scope.keys():
+            if isinstance(scope[key], str):
                 declared_var.append(key)
     return declared_var
-
 
     @property
     def js_obj(self):
@@ -155,9 +153,6 @@ class Number(Expr):
             raise ValueError(
                 f'line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
 
-  
-
-
     @property
     def js_obj(self):
         return {'tag': 'Number',
@@ -177,8 +172,6 @@ class Bool(Expr):
 
     def type_check(self, scopes: list[dict], return_type: Ty):
         pass
-
- 
 
     @property
     def js_obj(self):
@@ -220,8 +213,6 @@ class OpApp(Expr):
             raise TypeError(
                 f'Operation {self.op} not defined for arguments {self.args} with types {tuple([arg.ty.ty_str for arg in self.args])} at line {self.sloc}')
 
-  
-
     @property
     def js_obj(self):
         return {'tag': 'OpApp',
@@ -254,8 +245,6 @@ class IfElse(Stmt):
         self.block.type_check(scopes, return_type)
         self.ifrest.type_check(scopes, return_type)
 
- 
-
     @property
     def js_obj(self):
         return {'tag': 'IfElse',
@@ -281,7 +270,6 @@ class While(Stmt):
                 f'While condition must be of type bool - cannot be of type {self.condition.ty.ty_str} at line {self.sloc}')
         self.block.type_check(scopes, return_type)
 
-
     @property
     def js_obj(self):
         return {'tag': 'While',
@@ -296,7 +284,6 @@ class Jump(Stmt):
 
     def type_check(self, var_tys, return_type: Ty):
         pass
-
 
     @property
     def js_obj(self):
@@ -325,8 +312,6 @@ class Assign(Stmt):
             raise TypeError(
                 f"Assignment of variable '{self.var.name}' of type '{var_type}' to expr of type '{self.expr.ty.ty_str}' at line {self.sloc}")
 
-
-
     @property
     def js_obj(self):
         return {'tag': 'Assign',
@@ -341,10 +326,9 @@ class Eval(Stmt):
         super().__init__(sloc)
         self.expr = expr
 
-    def type_check(self, scopes: list[dict],return_type: Ty):
+    def type_check(self, scopes: list[dict], return_type: Ty):
         '''Type check the expression of an e,valuation'''
         self.expr.type_check(scopes, return_type)
-
 
     @property
     def js_obj(self):
@@ -386,11 +370,10 @@ class Return(Stmt):
     def type_check(self, scopes: list[dict], return_type: Ty) -> None:
         if self.expr is not None:
             self.expr.type_check(scopes, return_type)
-            self.ty = self.expr.ty  
-        if self.ty.ty_str != return_type.ty_str :
+            self.ty = self.expr.ty
+        if self.ty.ty_str != return_type.ty_str:
             raise TypeError(
-                    f'"return value type {self.ty.ty_str} does not match the function type {return_type.ty_str}" ')
-        
+                f'"return value type {self.ty.ty_str} does not match the function type {return_type.ty_str}" ')
 
     def syntax_check(self, fname):
         # FIXME
@@ -407,8 +390,6 @@ class Decl(Node):
 
     def __init__(self, sloc):
         super().__init__(sloc)
-
-
 
 
 class Varinit(Decl):
@@ -447,8 +428,6 @@ class Varinit(Decl):
                 f'Declaration of variable {self.var.name} of incorrect type')
         self.var.ty = self.expr.ty
         scopes[-1][self.var.name] = self.var.ty.ty_str
-
-
 
     @ property
     def js_obj(self):
@@ -506,7 +485,6 @@ class Procdecl(Decl):
         if self.name in global_scope:
             raise ValueError(f'Declaration {self.name} already declared')
         global_scope[self.name] = (args_type, self.return_type.ty_str)
-        
 
     def body_type_check(self, global_scope: list[dict]) -> None:
         '''Type check the body of a procedure'''
@@ -538,6 +516,9 @@ class Program(Node):
                     main_declared = True
         if not main_declared:
             raise ValueError(f'No declaration of main')
+        if global_scope['main'][0] or global_scope['main'][1] != 'void':
+            raise ValueError(
+                f'Incorrect arguments or return type for main declaration')
         self.global_scope = [global_scope]
 
     def type_check_bodies(self) -> None:
