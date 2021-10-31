@@ -8,7 +8,7 @@ import sys
 
 
 
-tac_path = 'examples\\'
+tac_path = 'examples/'
 tac_files = [os.path.join(dp, f)
              for dp, _, fn in os.walk(tac_path) for f in fn if f.endswith(".bx")]
 

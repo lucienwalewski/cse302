@@ -19,7 +19,7 @@ def bxfront(filename) :
             exit(1)
         else:
             print('Successfully lexed and parsed and type checked')
-    prog.type_check_global()
+    # prog.type_check_global()
     # type_check
     # prog.syntax_check(opts.fname)
 
