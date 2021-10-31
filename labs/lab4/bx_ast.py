@@ -503,6 +503,8 @@ class Procdecl(Decl):
             for param in self.params:
                 for arg_name in param.names:
                     args_type[arg_name] = param.ty.ty_str
+        if self.name in global_scope:
+            raise ValueError(f'Declaration {self.name} already declared')
         global_scope[self.name] = (args_type, self.return_type.ty_str)
         
 
