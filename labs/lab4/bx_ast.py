@@ -530,8 +530,14 @@ class Program(Node):
         '''Type check the declarations and add the types
         to the global scope in the first phase of type-checking'''
         global_scope = {}
+        main_declared = False
         for decl in self.decls:
             decl.type_check_global(global_scope)
+            if isinstance(decl, Procdecl):
+                if decl.name == 'main':
+                    main_declared = True
+        if not main_declared:
+            raise ValueError(f'No declaration of main')
         self.global_scope = [global_scope]
 
     def type_check_bodies(self) -> None:
