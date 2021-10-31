@@ -471,7 +471,7 @@ class Vardecl(Decl):
         for varinit in self.varinits:
             varinit.type_check_global(global_scope, self.ty)
 
-    def type_check(self, scopes: list[dict]) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
         for varinit in self.varinits:
             varinit.type_check(scopes, self.ty)
 
