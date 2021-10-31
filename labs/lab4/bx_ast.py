@@ -339,9 +339,11 @@ class Eval(Stmt):
 class Call(Expr):
     """Procedure call"""
 
-    def __init__(self, func: str, exprs: list[Expr]):
+    def __init__(self, sloc, func: str, exprs: list[Expr]):
+        super().__init__(sloc)
         self.func = func
         self.exprs = exprs
+        self.ty = Ty(self.sloc, 'void')
 
     def type_check(self, scopes: list[dict], return_type: Ty) -> None:
         if self.func == 'print':
