@@ -153,7 +153,7 @@ def p_ifrest(p):
               | ELSE ifelse
               | ELSE block'''
     if len(p) == 1:
-        p[0] = Block(p.lineno(1), [])
+        p[0] = Block(p.lineno(0), [])
     else:
         p[0] = p[2]
 
