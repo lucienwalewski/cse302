@@ -55,7 +55,7 @@ class Stmt(Node):
         super().__init__(sloc)
         self.ty: Ty
 
-    def type_check(self, scopes: list[dict], return_type: Ty):
+    def type_check(self, scopes: list[dict], return_type: Ty, context):
         pass
 
     def find_variable_type(self, var, scopes) -> str:
@@ -74,15 +74,22 @@ class Stmt(Node):
 
 class Block(Stmt):
     def __init__(self, sloc, stmts: List[Stmt]):
+  
         super().__init__(sloc)
         self.stmts = stmts
 
-    def type_check(self, scopes: list[dict], return_type: Ty):
+    def type_check(self, scopes: list[dict], return_type: Ty,context):
         '''Type check block by pushing new scope at start
         which is popped at the end'''
         scopes.append(dict())
+
+        
+
         for stmt in self.stmts:
-            stmt.type_check(scopes, return_type)
+            if isinstance(stmt,Jump) and "while" not in context :
+                raise Exception(f"{stmt.op} outside of loop")
+       
+            stmt.type_check(scopes, return_type, context)
         scopes.pop()
 
     @property
@@ -115,7 +122,7 @@ class Variable(Expr):
         if type:
             self.ty = Ty(self.sloc, type)
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty,context) -> None:
 
         if self.name not in get_declared_var(scopes):
             raise ValueError(
@@ -148,7 +155,7 @@ class Number(Expr):
         self.value = value
         self.ty = Ty(self.sloc, 'int')
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         if self.value < 0 or (self.value >> 63):
             raise ValueError(
                 f'line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
@@ -170,7 +177,7 @@ class Bool(Expr):
         self.value = value
         self.ty = Ty(self.sloc, 'bool')
 
-    def type_check(self, scopes: list[dict], return_type: Ty):
+    def type_check(self, scopes: list[dict], return_type: Ty, context):
         pass
 
     @property
@@ -192,10 +199,10 @@ class OpApp(Expr):
         self.op = op
         self.args = tuple(args)     # make container class explicitly a tuple
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context=None) -> None:
         '''Recursively type check expression'''
         for arg in self.args:
-            arg.type_check(scopes, return_type)
+            arg.type_check(scopes, return_type, context)
 
         if self.op in {'PLUS', 'MINUS', 'TIMES', 'DIV',
                        'MODULUS', 'BITAND', 'BITOR', 'BITXOR',
@@ -234,16 +241,19 @@ class IfElse(Stmt):
         assert isinstance(ifrest, (Block, IfElse))
         self.condition = condition
         self.block = block
+        print("in if")
+        print(ifrest)
         self.ifrest = ifrest
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty,context) -> None:
         '''Type check IfElse'''
-        self.condition.type_check(scopes, return_type)
+        self.condition.type_check(scopes, return_type, context)
         if self.condition.ty.ty_str != 'bool':
             raise TypeError(
                 f'IfElse condition must be of type bool - cannot be of type {self.condition.ty} at line {self.sloc}')
-        self.block.type_check(scopes, return_type)
-        self.ifrest.type_check(scopes, return_type)
+        context.append("if")
+        self.block.type_check(scopes, return_type,context)
+        self.ifrest.type_check(scopes, return_type, context)
 
     @property
     def js_obj(self):
@@ -263,12 +273,13 @@ class While(Stmt):
         self.condition = condition
         self.block = block
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
-        self.condition.type_check(scopes, return_type)
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+        self.condition.type_check(scopes, return_type, context)
         if self.condition.ty.ty_str != 'bool':
             raise TypeError(
                 f'While condition must be of type bool - cannot be of type {self.condition.ty.ty_str} at line {self.sloc}')
-        self.block.type_check(scopes, return_type)
+        context.append("while")
+        self.block.type_check(scopes, return_type, context)
 
     @property
     def js_obj(self):
@@ -282,7 +293,7 @@ class Jump(Stmt):
         super().__init__(sloc)
         self.op = op
 
-    def type_check(self, var_tys, return_type: Ty):
+    def type_check(self, var_tys, return_type: Ty, context):
         pass
 
     @property
@@ -302,12 +313,12 @@ class Assign(Stmt):
         self.var = var
         self.expr = expr
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         '''Type check an assignment. Check that variable was previously
         declared and that types of expr and var match'''
-        self.var.type_check(scopes, return_type)
+        self.var.type_check(scopes, return_type, context)
         var_type = self.find_variable_type(self.var.name, scopes)
-        self.expr.type_check(scopes, return_type)
+        self.expr.type_check(scopes, return_type, context)
         if var_type != self.expr.ty.ty_str:
             raise TypeError(
                 f"Assignment of variable '{self.var.name}' of type '{var_type}' to expr of type '{self.expr.ty.ty_str}' at line {self.sloc}")
@@ -326,9 +337,10 @@ class Eval(Stmt):
         super().__init__(sloc)
         self.expr = expr
 
-    def type_check(self, scopes: list[dict], return_type: Ty):
+    def type_check(self, scopes: list[dict], return_type: Ty, context):
         '''Type check the expression of an e,valuation'''
-        self.expr.type_check(scopes, return_type)
+       
+        self.expr.type_check(scopes, return_type, context)
 
     @property
     def js_obj(self):
@@ -343,13 +355,15 @@ class Call(Expr):
         super().__init__(sloc)
         self.func = func
         self.exprs = exprs
-        self.ty = Ty(self.sloc, 'void')
+        
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         if self.func == 'print':
+           
             assert len(self.exprs) == 1
             expr = self.exprs[0]
-            expr.type_check(scopes, return_type)
+            expr.type_check(scopes, return_type, context)
             if expr.ty.ty_str == 'int':
                 self.func = '__bx_print_int'
             elif expr.ty.ty_str == 'bool':
@@ -357,9 +371,17 @@ class Call(Expr):
             else:
                 raise TypeError(
                     f'Cannot print expressions of type: {expr.ty}')
+            self.ty = Ty(self.sloc, "void")
         else:
-            pass
-            # handle all other kinds of calls
+            ret_ty = self.find_function_type(self.func, scopes)
+            self.ty = Ty(self.sloc, ret_ty)
+
+    def find_function_type(self, func, scopes) -> str:
+        for scope in reversed(scopes):
+            if func in scope:
+                return scope[func][1]
+        raise ValueError(f'Procedure {func} not declared at line {self.sloc}')
+           
 
 
 class Return(Stmt):
@@ -369,9 +391,9 @@ class Return(Stmt):
         if expr is None:
             self.ty = Ty(self.sloc, 'void')
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         if self.expr is not None:
-            self.expr.type_check(scopes, return_type)
+            self.expr.type_check(scopes, return_type, context)
             self.ty = self.expr.ty
         if self.ty.ty_str != return_type.ty_str:
             raise TypeError(
@@ -418,13 +440,13 @@ class Varinit(Decl):
                 f'{self.var.name} of incorrect type. Expected {var_type.ty_str}. Obtained {self.expr.ty.ty_str}')
         global_scope[self.var.name] = self.expr.ty.ty_str
 
-    def type_check(self, scopes: list[dict], var_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], var_type: Ty, context) -> None:
         '''Type check a single variable initialisation. Add variable
         to current scope if no errors raised'''
         if self.var.name in scopes[-1]:
             raise ValueError(
                 f'Duplicate variable declaration:{self.var.name} at line {self.sloc}')
-        self.expr.type_check(scopes, return_type=None)
+        self.expr.type_check(scopes, None, context)
         if self.expr.ty.ty_str != var_type.ty_str:
             raise ValueError(
                 f'Declaration of variable {self.var.name} of incorrect type')
@@ -452,9 +474,9 @@ class Vardecl(Decl):
         for varinit in self.varinits:
             varinit.type_check_global(global_scope, self.ty)
 
-    def type_check(self, scopes: list[dict], return_type: Ty) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         for varinit in self.varinits:
-            varinit.type_check(scopes, self.ty)
+            varinit.type_check(scopes, self.ty,None)
 
 
 class Param(Node):
@@ -490,9 +512,10 @@ class Procdecl(Decl):
 
     def body_type_check(self, global_scope: list[dict]) -> None:
         '''Type check the body of a procedure'''
+        context = ["proc"]
         body_scope = global_scope[0][self.name][0]
         global_scope.append(body_scope)
-        self.block.type_check(global_scope, self.return_type)
+        self.block.type_check(global_scope, self.return_type, context)
         global_scope.pop()
 
 
