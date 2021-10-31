@@ -6,4 +6,5 @@ def get_42() : int {
   while (true) {
     return 42;
   }
+
 }
