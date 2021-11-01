@@ -13,6 +13,8 @@ opcode_map = {
     'GT': 'jg', 'GEQ': 'jge'
 }
 
+
+
 ####################
 # Instructions
 
@@ -32,8 +34,38 @@ class Instr:
                 'args': self.args,
                 'result': self.result}
 
-
 class Prog():
+    def __init__(self, prog: Program) -> None:
+        self.prog = prog
+        self.compilation_units = {}
+        self.proc_units = {}
+        self.global_vars = {}
+        self.__last = 0
+
+    def _fresh(self) -> int:
+        '''Obtain fresh temporary'''
+        self.__last += 1
+        t = f'%{self.__last}'
+        self.localtemps.append(t)
+        return t
+
+    def create_compilation_units(self) -> None:
+        '''Create a dictionary of compilation units
+        of the form: 
+            name : [arg1,arg2,...]'''
+        for decl in self.prog.decls:
+            if isinstance(decl, Vardecl):
+                for varinit in decl.varinits:
+                    self.global_vars[varinit.var] = fresh
+            else:
+                pass
+
+
+
+    
+
+
+class Proc():
     def __init__(self, ast_prog: Program, alg = 'tmm'):
         self.localtemps = []
         self.instrs = []
@@ -45,6 +77,7 @@ class Prog():
         for v in ast_prog.lvars:
             self._emit('const', [0], self._lookup(v))
         self.tmm_stmt(ast_prog.block)
+        
 
     @property
     def js_obj(self):
