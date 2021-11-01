@@ -105,7 +105,7 @@ def t_IDENT(t):
 
 
 def t_NUMBER(t):
-    r'[-]?\d+'
+    r'0|-?[1-9][0-9]*'
     t.value = int(t.value)
     return t
 
