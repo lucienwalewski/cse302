@@ -82,15 +82,20 @@ class Block(Stmt):
         '''Type check block by pushing new scope at start
         which is popped at the end'''
         scopes.append(dict())
+        return_statement = False
 
         
 
         for stmt in self.stmts:
             if isinstance(stmt,Jump) and "while" not in context :
                 raise Exception(f"{stmt.op} outside of loop")
-       
-            stmt.type_check(scopes, return_type, context)
+
+            else :
+                print("lol",stmt) 
+                return_statement |= stmt.type_check(scopes, return_type, context)
         scopes.pop()
+        print("coucou", return_statement)
+        return return_statement 
 
     @property
     def js_obj(self):
@@ -127,6 +132,7 @@ class Variable(Expr):
         if self.name not in get_declared_var(scopes):
             raise ValueError(
                 f'{self.fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
+        return False 
 
 
 def get_declared_var(scopes):
@@ -159,6 +165,7 @@ class Number(Expr):
         if self.value < 0 or (self.value >> 63):
             raise ValueError(
                 f'line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
+        return False
 
     @property
     def js_obj(self):
@@ -178,7 +185,7 @@ class Bool(Expr):
         self.ty = Ty(self.sloc, 'bool')
 
     def type_check(self, scopes: list[dict], return_type: Ty, context):
-        pass
+        return False
 
     @property
     def js_obj(self):
@@ -219,6 +226,9 @@ class OpApp(Expr):
         else:
             raise TypeError(
                 f'Operation {self.op} not defined for arguments {self.args} with types {tuple([arg.ty.ty_str for arg in self.args])} at line {self.sloc}')
+        return False
+
+
 
     @property
     def js_obj(self):
@@ -247,13 +257,16 @@ class IfElse(Stmt):
 
     def type_check(self, scopes: list[dict], return_type: Ty,context) -> None:
         '''Type check IfElse'''
+        return_statement = False
         self.condition.type_check(scopes, return_type, context)
         if self.condition.ty.ty_str != 'bool':
             raise TypeError(
                 f'IfElse condition must be of type bool - cannot be of type {self.condition.ty} at line {self.sloc}')
         context.append("if")
         self.block.type_check(scopes, return_type,context)
-        self.ifrest.type_check(scopes, return_type, context)
+        print(self.ifrest)
+        return_statement |= self.ifrest.type_check(scopes, return_type, context)
+        return return_statement
 
     @property
     def js_obj(self):
@@ -280,6 +293,7 @@ class While(Stmt):
                 f'While condition must be of type bool - cannot be of type {self.condition.ty.ty_str} at line {self.sloc}')
         context.append("while")
         self.block.type_check(scopes, return_type, context)
+        return False
 
     @property
     def js_obj(self):
@@ -294,7 +308,7 @@ class Jump(Stmt):
         self.op = op
 
     def type_check(self, var_tys, return_type: Ty, context):
-        pass
+        return False
 
     @property
     def js_obj(self):
@@ -323,6 +337,8 @@ class Assign(Stmt):
             raise TypeError(
                 f"Assignment of variable '{self.var.name}' of type '{var_type}' to expr of type '{self.expr.ty.ty_str}' at line {self.sloc}")
 
+        return False
+
     @property
     def js_obj(self):
         return {'tag': 'Assign',
@@ -341,6 +357,7 @@ class Eval(Stmt):
         '''Type check the expression of an e,valuation'''
        
         self.expr.type_check(scopes, return_type, context)
+        return False
 
     @property
     def js_obj(self):
@@ -376,6 +393,8 @@ class Call(Expr):
             ret_ty = self.find_function_type(self.func, scopes)
             self.ty = Ty(self.sloc, ret_ty)
 
+        return False
+
     def find_function_type(self, func, scopes) -> str:
         for scope in reversed(scopes):
             if func in scope:
@@ -398,6 +417,8 @@ class Return(Stmt):
         if self.ty.ty_str != return_type.ty_str:
             raise TypeError(
                 f'"return value type {self.ty.ty_str} does not match the function type {return_type.ty_str}" ')
+
+        return True
 
     def syntax_check(self, fname):
         # FIXME
@@ -453,6 +474,8 @@ class Varinit(Decl):
         self.var.ty = self.expr.ty
         scopes[-1][self.var.name] = self.var.ty.ty_str
 
+        return False
+
     @ property
     def js_obj(self):
         return {'tag': 'Varinit',
@@ -477,6 +500,9 @@ class Vardecl(Decl):
     def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         for varinit in self.varinits:
             varinit.type_check(scopes, self.ty,None)
+        return False
+        
+
 
 
 class Param(Node):
@@ -515,7 +541,9 @@ class Procdecl(Decl):
         context = ["proc"]
         body_scope = global_scope[0][self.name][0]
         global_scope.append(body_scope)
-        self.block.type_check(global_scope, self.return_type, context)
+        return_statement = self.block.type_check(global_scope, self.return_type, context)
+        if not return_statement and self.return_type.ty_str != "void" : raise Exception
+        print(return_statement)
         global_scope.pop()
 
 
