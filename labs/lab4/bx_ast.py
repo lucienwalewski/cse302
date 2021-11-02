@@ -74,28 +74,25 @@ class Stmt(Node):
 
 class Block(Stmt):
     def __init__(self, sloc, stmts: List[Stmt]):
-  
+
         super().__init__(sloc)
         self.stmts = stmts
 
-    def type_check(self, scopes: list[dict], return_type: Ty,context):
+    def type_check(self, scopes: list[dict], return_type: Ty, context):
         '''Type check block by pushing new scope at start
         which is popped at the end'''
         scopes.append(dict())
         return_statement = False
 
-        
-
         for stmt in self.stmts:
-            if isinstance(stmt,Jump) and "while" not in context :
+            if isinstance(stmt, Jump) and "while" not in context:
                 raise Exception(f"{stmt.op} outside of loop")
 
-            else :
-                print("lol",stmt) 
-                return_statement |= stmt.type_check(scopes, return_type, context)
+            else:
+                return_statement |= stmt.type_check(
+                    scopes, return_type, context)
         scopes.pop()
-        print("coucou", return_statement)
-        return return_statement 
+        return return_statement
 
     @property
     def js_obj(self):
@@ -127,13 +124,18 @@ class Variable(Expr):
         if type:
             self.ty = Ty(self.sloc, type)
 
-    def type_check(self, scopes: list[dict], return_type: Ty,context) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
 
         if self.name not in get_declared_var(scopes):
             raise ValueError(
                 f'{self.fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
-        return False 
+        return False
 
+    @property
+    def js_obj(self):
+        return {'tag': 'Variable',
+                'type': self.ty,
+                'name': self.name}
 
 def get_declared_var(scopes):
     declared_var = []
@@ -143,11 +145,6 @@ def get_declared_var(scopes):
                 declared_var.append(key)
     return declared_var
 
-    @property
-    def js_obj(self):
-        return {'tag': 'Variable',
-                'type': self.ty,
-                'name': self.name}
 
 
 class Number(Expr):
@@ -162,7 +159,7 @@ class Number(Expr):
         self.ty = Ty(self.sloc, 'int')
 
     def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
-        if self.value < 0 or (self.value >> 63):
+        if (self.value >> 63) not in [-1, 0]:
             raise ValueError(
                 f'line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
         return False
@@ -213,7 +210,7 @@ class OpApp(Expr):
 
         if self.op in {'PLUS', 'MINUS', 'TIMES', 'DIV',
                        'MODULUS', 'BITAND', 'BITOR', 'BITXOR',
-                       'BITSHL', 'BITSHR', 'UMINUS', 'NEG', 'BITCOMPL'
+                       'BITSHL', 'BITSHR', 'NEG', 'BITCOMPL'
                        } and all([arg.ty.ty_str == 'int' for arg in self.args]):
             self.ty = Ty(self.sloc, 'int')
         elif self.op in {'EQUALITY', 'DISEQUALITY',
@@ -227,8 +224,6 @@ class OpApp(Expr):
             raise TypeError(
                 f'Operation {self.op} not defined for arguments {self.args} with types {tuple([arg.ty.ty_str for arg in self.args])} at line {self.sloc}')
         return False
-
-
 
     @property
     def js_obj(self):
@@ -251,11 +246,9 @@ class IfElse(Stmt):
         assert isinstance(ifrest, (Block, IfElse))
         self.condition = condition
         self.block = block
-        print("in if")
-        print(ifrest)
         self.ifrest = ifrest
 
-    def type_check(self, scopes: list[dict], return_type: Ty,context) -> None:
+    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         '''Type check IfElse'''
         return_statement = False
         self.condition.type_check(scopes, return_type, context)
@@ -263,9 +256,9 @@ class IfElse(Stmt):
             raise TypeError(
                 f'IfElse condition must be of type bool - cannot be of type {self.condition.ty} at line {self.sloc}')
         context.append("if")
-        self.block.type_check(scopes, return_type,context)
-        print(self.ifrest)
-        return_statement |= self.ifrest.type_check(scopes, return_type, context)
+        self.block.type_check(scopes, return_type, context)
+        return_statement |= self.ifrest.type_check(
+            scopes, return_type, context)
         return return_statement
 
     @property
@@ -355,7 +348,7 @@ class Eval(Stmt):
 
     def type_check(self, scopes: list[dict], return_type: Ty, context):
         '''Type check the expression of an e,valuation'''
-       
+
         self.expr.type_check(scopes, return_type, context)
         return False
 
@@ -372,12 +365,10 @@ class Call(Expr):
         super().__init__(sloc)
         self.func = func
         self.exprs = exprs
-        
-
 
     def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         if self.func == 'print':
-           
+
             assert len(self.exprs) == 1
             expr = self.exprs[0]
             expr.type_check(scopes, return_type, context)
@@ -400,7 +391,6 @@ class Call(Expr):
             if func in scope:
                 return scope[func][1]
         raise ValueError(f'Procedure {func} not declared at line {self.sloc}')
-           
 
 
 class Return(Stmt):
@@ -499,10 +489,8 @@ class Vardecl(Decl):
 
     def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         for varinit in self.varinits:
-            varinit.type_check(scopes, self.ty,None)
+            varinit.type_check(scopes, self.ty, None)
         return False
-        
-
 
 
 class Param(Node):
@@ -541,9 +529,10 @@ class Procdecl(Decl):
         context = ["proc"]
         body_scope = global_scope[0][self.name][0]
         global_scope.append(body_scope)
-        return_statement = self.block.type_check(global_scope, self.return_type, context)
-        if not return_statement and self.return_type.ty_str != "void" : raise Exception
-        print(return_statement)
+        return_statement = self.block.type_check(
+            global_scope, self.return_type, context)
+        if not return_statement and self.return_type.ty_str != "void":
+            raise Exception
         global_scope.pop()
 
 

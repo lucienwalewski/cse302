@@ -58,7 +58,7 @@ tokens = (
     'DISEQUALITY',
     'BOOLAND',
     'BOOLOR',
-    'BOOLNEG'
+    'BOOLNEG', 
 ) + tuple(reserved.values())
 
 # Regexp strings definitions beginning with ‘t_' define simple tokens

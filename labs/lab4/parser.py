@@ -22,7 +22,7 @@ precedence = (
     ('left', 'BITSHL', 'BITSHR'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIV', 'MODULUS'),
-    ('right', 'UMINUS', 'BOOLNEG'),
+    ('right', 'BOOLNEG'),
     ('right', 'BITCOMPL')
 )
 
@@ -233,7 +233,8 @@ def p_operators(p):
             | expr LT expr
             | expr LEQ expr
             | BITCOMPL expr
-            | BOOLNEG expr'''
+            | BOOLNEG expr
+            | MINUS expr'''
     if len(p) == 4:
         if p[2] == '+':
             p[0] = OpApp(p.lineno(2), 'PLUS', (p[1], p[3]))
@@ -276,6 +277,8 @@ def p_operators(p):
             p[0] = OpApp(p.lineno(2), 'BITCOMPL', [p[2]])
         elif p[1] == '!':
             p[0] = OpApp(p.lineno(2), 'BOOLNEG', [p[2]])
+        elif p[1] == '-':
+            p[0] = OpApp(p.lineno(2), 'MINUS', [p[2]])
 
 
 def p_expr_parens(p):
@@ -306,11 +309,6 @@ def p_exprs_star(p):
         p[0] = p[1]
         p[1].append(p[2])
 
-
-def p_expr_uminus(p):
-    '''expr : MINUS expr %prec UMINUS'''
-    p[0] = OpApp(p.lineno(2), 'UMINUS', [p[2]])
-    # FIXME
 
 # Error rule for syntax errors
 
