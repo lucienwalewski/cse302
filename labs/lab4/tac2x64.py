@@ -16,6 +16,8 @@ from typing import List
 import sys
 import os
 
+register_temporaries = {1:"rdi", 2:"rsi", 3:"rdx", 4:"rcx", 5:"r8", 6:"r9"}
+
 jcc = {"je": (lambda arg, label: ['movq $0, %r11',
                                   f'cmpq %r11, {arg}',
                                   f'je {label}']),
@@ -78,6 +80,8 @@ def tac_to_asm(tac_instrs):
     """
     temp_map = dict()
     asm = []
+    
+
     for instr in tac_instrs:
         opcode = instr["opcode"]
         args = instr["args"]
@@ -85,11 +89,15 @@ def tac_to_asm(tac_instrs):
         if opcode == 'nop':
             pass
         elif opcode == "param" :
-            # create new temporary
-            # copy the arg to temporary
-            # add (n,temp_name) to the list of argument of call
-            pass 
-
+            # get stack slot location of the arg
+            arg = lookup_temp(args[1], temp_map)
+            # create new temporary or fill the old one if we already created one
+            result = lookup_temp("%-"+str(arg[0]) , temp_map)
+            # copy the arg to stack slot of temporary
+            asm.append(f'movq {arg}, %r11')
+            asm.append(f'movq %r11, {result}')
+            
+        
         elif opcode == "call" :
             # order the list using by decreasing oreder of the first element of the tupple 
             # put the 7 first arguments into the registers (start by end of the list)
@@ -97,14 +105,23 @@ def tac_to_asm(tac_instrs):
             # push smthg useless if not 16 bytes alignes (nb of args is not even)
             # empty the list of call arguments 
 
-            pass
+            for index_arg in range(1,min(6,args[1])+1) :
+                arg_temp = lookup_temp("%-"+index_arg, temp_map)
+                asm.append(f'movq {arg_temp}, {register_temporaries[index_arg]}')
+            
+            for index_arg in range(args[1], min(6,args[1]),-1) :
+                arg_temp = lookup_temp("%-"+index_arg, temp_map) 
+                asm.append(f'pushq {arg_temp}')
+            
+            if args[1] > 6 and (args[1]%2) :
+                asm.append(f'pushq $0')
+            
+            asm.append(f'callq {arg[0]}')
+            asm.append(f'addq ${  8  *  (args[1]-6) + args[1]%2 }, %rsp')
+            asm.append(f'movq %rax, {result[0]}')
+            
 
-
-
-
-            if instr["args"]
-        elif opcode == "ret" :
-            asm.append(f'jmp Lret')
+        
         elif opcode == 'const':
             assert len(args) == 1 and isinstance(args[0], int)
             result = lookup_temp(result, temp_map)
