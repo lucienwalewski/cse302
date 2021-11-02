@@ -256,9 +256,9 @@ class IfElse(Stmt):
             raise TypeError(
                 f'IfElse condition must be of type bool - cannot be of type {self.condition.ty} at line {self.sloc}')
         context.append("if")
-        self.block.type_check(scopes, return_type, context)
-        return_statement |= self.ifrest.type_check(
-            scopes, return_type, context)
+        if_return_statement =  self.block.type_check(scopes, return_type, context)
+        return_statement |= (self.ifrest.type_check(
+            scopes, return_type, context) and if_return_statement)
         return return_statement
 
     @property
