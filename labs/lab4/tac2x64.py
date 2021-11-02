@@ -84,8 +84,27 @@ def tac_to_asm(tac_instrs):
         result = instr["result"]
         if opcode == 'nop':
             pass
+        elif opcode == "param" :
+            # create new temporary
+            # copy the arg to temporary
+            # add (n,temp_name) to the list of argument of call
+            pass 
+
+        elif opcode == "call" :
+            # order the list using by decreasing oreder of the first element of the tupple 
+            # put the 7 first arguments into the registers (start by end of the list)
+            # when done with the 7 first, start by beginning of the list 
+            # push smthg useless if not 16 bytes alignes (nb of args is not even)
+            # empty the list of call arguments 
+
+            pass
+
+
+
+
+            if instr["args"]
         elif opcode == "ret" :
-            asm.append(f'retq')
+            asm.append(f'jmp Lret')
         elif opcode == 'const':
             assert len(args) == 1 and isinstance(args[0], int)
             result = lookup_temp(result, temp_map)
@@ -143,7 +162,8 @@ def tac_to_asm(tac_instrs):
     asm[:0] = [f'pushq %rbp',
                f'movq %rsp, %rbp',
                f'subq ${8 * len(temp_map)}, %rsp'] 
-    asm.extend([f'movq %rbp, %rsp',
+    asm.extend([f'Lret:',
+                f'movq %rbp, %rsp',
                 f'popq %rbp',
                 f'xorq %rax, %rax',
                 f'retq'])
@@ -186,5 +206,9 @@ def compile_tac_from_json(fname):
         print(*asm, file=afp, sep='\n')
     print(f'{fname} -> {sname}')
 
+
+
+if __name__ == "__main__":
+    compile_tac_from_json(sys.argv[1])
 
 
