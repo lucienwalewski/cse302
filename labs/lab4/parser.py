@@ -307,7 +307,7 @@ def p_exprs_star(p):
         p[0] = []
     else:
         p[0] = p[1]
-        p[1].append(p[2])
+        p[1].append(p[3])
 
 
 # Error rule for syntax errors

@@ -27,7 +27,7 @@ def reset():
 class Node:
     """Superclass of all AST nodes"""
     vardecls = {}
-    fname = ''
+    fname = None
 
     def __init__(self, sloc):
         """
@@ -128,7 +128,7 @@ class Variable(Expr):
 
         if self.name not in get_declared_var(scopes):
             raise ValueError(
-                f'{self.fname}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
+                f'{self.name}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
         return False
 
     @property
@@ -368,7 +368,6 @@ class Call(Expr):
 
     def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
         if self.func == 'print':
-
             assert len(self.exprs) == 1
             expr = self.exprs[0]
             expr.type_check(scopes, return_type, context)
@@ -410,10 +409,6 @@ class Return(Stmt):
 
         return True
 
-    def syntax_check(self, fname):
-        # FIXME
-        pass
-
     @ property
     def js_obj(self):
         # FIXME
@@ -441,7 +436,6 @@ class Varinit(Decl):
 
     def type_check_global(self, global_scope: dict, var_type: Ty) -> None:
         '''Type check global variables and add type to global scope'''
-        # FIXME - Add line number information
         if self.var.name in global_scope:
             raise ValueError(f'Duplicate declaration of {self.var.name}')
         if not isinstance(self.expr, (Number, Bool)):
@@ -450,6 +444,7 @@ class Varinit(Decl):
             raise ValueError(
                 f'{self.var.name} of incorrect type. Expected {var_type.ty_str}. Obtained {self.expr.ty.ty_str}')
         global_scope[self.var.name] = self.expr.ty.ty_str
+        self.var.ty = self.expr.ty
 
     def type_check(self, scopes: list[dict], var_type: Ty, context) -> None:
         '''Type check a single variable initialisation. Add variable
