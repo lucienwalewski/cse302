@@ -15,6 +15,8 @@ from ast2tac import Instr
 from typing import List
 import sys
 import os
+import random
+import string
 
 arg_nb_to_reg = {1:"rdi", 2:"rsi", 3:"rdx", 4:"rcx", 5:"r8", 6:"r9"}
 reg_to_arg_nb = {"rdi":1, "rsi":2, "rdx":3, "rcx":4, "r8":5, "r9":6}
@@ -72,28 +74,36 @@ unops = {'neg': 'negq',
 def lookup_temp(temp, temp_map):
     
     if temp[0] == "@" :
-        return f'({temp[1:]}%rip)'
+        print(f'{temp[1:]}(%rip)')
+        return f'{temp[1:]}(%rip)'
 
     assert (isinstance(temp, str) and
             temp[0] == '%'), temp
     return temp_map.setdefault(temp, f'{-8 * (len(temp_map) + 1)}(%rbp)')
 
 
-def tac_to_asm_proc(tac_instrs, args_proc):
+def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
     """
     Get the x64 instructions correspondign to the TAC instructions for the procedure
     """
+    letters = string.ascii_letters  
     temp_map = dict()
     asm = []
+    ret_label = ''.join(random.choice(letters) for i in range(5)) 
+    reg_list = reg_to_arg_nb.keys()
+    for reg in reg_list :
+        asm.append(f'pushq %{reg}')
+    
+    asm.append(f'pushq $0')
+    
 
-    asm.append(f'pushq %rbp')
-    M = 1
+    M = len(reg_list)+1
     asm.append(f'movq %rsp, %rbp')
     
     for index_arg in range(0,len(args_proc)) :
         if index_arg<= 5 :
             stack_slot = lookup_temp(args_proc[index_arg],temp_map)
-            asm.append(f'movq {arg_nb_to_reg[index_arg+1]}, {stack_slot}')
+            asm.append(f'movq %{arg_nb_to_reg[index_arg+1]}, {stack_slot}')
         else :
             stack_slot = lookup_temp(args_proc[index_arg],temp_map)
             asm.append(f'movq {8*(index_arg+1)}(%rbp), {stack_slot}')
@@ -123,30 +133,32 @@ def tac_to_asm_proc(tac_instrs, args_proc):
             # empty the list of call arguments 
 
             for index_arg in range(1,min(6,args[1])+1) :
-                arg_temp = lookup_temp("%-"+index_arg, temp_map)
-                asm.append(f'movq {arg_temp}, {arg_nb_to_reg[index_arg]}')
+                arg_temp = lookup_temp('%-{index_arg}', temp_map)
+                asm.append(f'movq {arg_temp}, %{arg_nb_to_reg[index_arg]}')
             
             for index_arg in range(args[1], min(6,args[1]),-1) :
-                arg_temp = lookup_temp("%-"+index_arg, temp_map) 
+                arg_temp = lookup_temp('%-{index_arg}', temp_map) 
                 asm.append(f'pushq {arg_temp}')
             
             if args[1] > 6 and (args[1]%2) :
                 asm.append(f'pushq $0')
             
-            asm.append(f'callq {args[0]}')
+            asm.append(f'callq {args[0][1:]}')
             asm.append(f'addq ${  8  *  (args[1]-6) + args[1]%2 }, %rsp')
-            asm.append(f'movq %rax, {result[0]}')
+            if result :
+                
+                asm.append(f'movq %rax, {result[1:]}')
             
 
-        elif opcode == "retq" :
+        elif opcode == "ret" :
             if len(args) != 0 :
-                asm.append(f'movq {lookup_temp(args[0])}, %rax ')
-                asm.append(f'jmp Lret')
+                asm.append(f'movq {lookup_temp(args[0],temp_map)}, %rax ')
+                asm.append(f'jmp .{ret_label}')
 
 
             else :
                 asm.append(f'xorq %rax, %rax')
-                asm.append(f'jmp Lret')
+                asm.append(f'jmp .{ret_label}')
 
         elif opcode == 'const':
             assert len(args) == 1 and isinstance(args[0], int)
@@ -205,9 +217,13 @@ def tac_to_asm_proc(tac_instrs, args_proc):
     asm[:0] = [f'pushq %rbp',
                f'movq %rsp, %rbp',
                f'subq ${8 * len(temp_map)}, %rsp'] 
-    asm.extend([f'Lret:',
-                f'movq %rbp, %rsp',
-                f'popq %rbp',
+    asm.extend([f'.{ret_label}:',
+                f'movq %rbp, %rsp'])
+    asm.append(f'addq $8, %rsp')
+    for reg in reg_list[::-1] :
+        asm.append(f'popq %{reg}')
+
+    asm.extend([f'popq %rbp',
                 f'retq'])
     return asm
 
@@ -245,12 +261,12 @@ def compile_tac_from_json(fname):
     
     for json_obj in tjs :
         if "proc" in json_obj.keys() :
-            declarations.append(f'\t.globl {json_obj["proc"]}')
-            asm += [f'{json_obj["proc"]} :']
-            asm += ['\t' + line for line in tac_to_asm_proc(json_obj['body'],json_obj["args"])]
+            declarations.append(f'\t.globl {json_obj["proc"][1:]}')
+            asm += [f'{json_obj["proc"][1:]} :']
+            asm += ['\t' + line for line in tac_to_asm_proc(json_obj['body'],json_obj["args"],json_obj["proc"][1:])]
         if "var" in json_obj.keys() :
-            declarations.append(f'\t.globl {json_obj["var"]}')
-            data.append(f'{json_obj["var"]}:  .quad {json_obj["init"]}')
+            declarations.append(f'\t.globl {json_obj["var"][1:]}')
+            data.append(f'{json_obj["var"][1:]}:  .quad {json_obj["init"]}')
 
     
     asm[:0] = declarations + [f'.data'] + data + [f'.text']
