@@ -16,8 +16,12 @@ from typing import List, Tuple, Union
 
 __last_label = 0
 
-conditional_jumps = ["je", "jne", "jl", "jle",
-                     "jg", "jge"]  # list of cond jump instructions
+_conditional_jumps = ["je", "jne", "jl", "jle",
+                      "jg", "jge"]  # list of cond jump instructions
+
+_conditional_jumps_pars = {'je': ['je', 'jle', 'jge'], 'jne': ['jne'],
+                        'jl': ['jl', 'jne', 'jle'], 'jle': ['jle'],
+                        'jg': ['jg', 'jne', 'jge'], 'jge': ['jge']}
 
 
 class BasicBlock():
@@ -31,13 +35,13 @@ class BasicBlock():
         assert label["opcode"] == 'label', 'Incorrect beginning of basic block'
         self._label = label["args"][0]
         self._prev = set()
-        self._succ = set()
+        # self._succ = set()
         self.update_succ()
-        self._empty_body = True if len(self.instructions) == 2 else False
+        # self._empty_body = True if len(self.instructions) == 2 else False
 
-    @property
-    def prev(self):
-        return self._prev
+    # @property
+    # def prev(self):
+    #     return self._prev
 
     @property
     def succ(self):
@@ -50,15 +54,16 @@ class BasicBlock():
     def update_succ(self):
         '''Iterates over instructions and adds labels
         and jumps to list of destinations'''
+        self._succ = set()
         for instr in self.instructions[1:]:
-            if instr['opcode'] in conditional_jumps:
+            if instr['opcode'] in _conditional_jumps:
                 self._succ.add(instr['args'][1])
             elif instr['opcode'] == 'jmp':
                 self._succ.add(instr['args'][0])
 
-    def add_prev(self, prev: str):
-        '''Add BasisBlock to list of predecessors'''
-        self._prev.add(prev)
+    # def add_prev(self, prev: str):
+    #     '''Add BasisBlock to list of predecessors'''
+    #     self._prev.add(prev)
 
     def add_succ(self, succ: str):
         '''Add BasicBlock to list of successors'''
@@ -67,13 +72,7 @@ class BasicBlock():
 
 class CFG():
     def __init__(self, entry_block: str, blocks: List[BasicBlock]) -> None:
-        self._entry_block = entry_block
-        self._block_map = {block.label: block for block in blocks}
-        self._fwd = {label: set() for label in self._block_map}
-        self._bwd = {label: set() for label in self._block_map}
-        self._construct_cfg()
-        self._empty_blocks = {
-            block for block in self._block_map if self._block_map[block]._empty_body}
+        self._construct_cfg(entry_block, blocks)
 
     def __getitem__(self, label: str) -> BasicBlock:
         '''Return the block with input label "label"'''
@@ -91,8 +90,14 @@ class CFG():
     def add_edge(self, label_from, label_to):
         pass
 
-    def _construct_cfg(self) -> None:
+    def _construct_cfg(self, entry_block: str, blocks: List[BasicBlock]) -> None:
         '''Constructs the cfg'''
+        for block in blocks:
+            block.update_succ()
+        self._entry_block = entry_block
+        self._block_map = dict({block.label: block for block in blocks})
+        self._fwd = dict({label: set() for label in self._block_map})
+        self._bwd = dict({label: set() for label in self._block_map})
         for block in self._block_map:
             for succ in self._block_map[block].succ:
                 self._fwd[block].add(succ)
@@ -101,47 +106,37 @@ class CFG():
             for dest in dests:
                 self._bwd[dest].add(origin)
 
-    def _coalesce(self) -> None:
-        '''Coalesce all linear blocks'''
-        merged_blocks = []
-        for b1, dests in self._fwd.items():
-            if len(dests) == 1:
-                b2 = next(iter(dests))
-                if len(self._bwd[b2]) == 1:
-                    merged_blocks.append((b1, b2))
-        self._merge(merged_blocks)
+    def _can_merge(self, b1: str, b2: str) -> bool:
+        '''Check if two block can be merged'''
+        return self._fwd[b1] == [b2] and self._bwd[b2] == [b1]
 
-    def _merge(self, merged_blocks: List[Tuple[str, str]]) -> None:
-        '''Given a list of coalescable blocks, updated the cfg'''
-        for b1, b2 in merged_blocks:
-            instructions = self._block_map[b1].instructions[:-1] \
-                + self._block_map[b2].instructions
-            self._block_map[b1] = BasicBlock(instructions)
-            # if b2 in self._empty_blocks:
-            #     self._empty_blocks.remove(b2)
-            # if self._block_map[b1]._empty_body:
-            #     self._empty_blocks.add(b1)
-            for succ in self._fwd[b2]:
-                self._bwd[succ].remove(b2)
-                self._bwd[succ].add(b1)
-            self._fwd[b1] = self._fwd[b2]
-        for _, b2 in merged_blocks:
-            del self._block_map[b2]
-            del self._fwd[b2]
-            del self._bwd[b2]
+    def _is_empty(self, block: str) -> bool:
+        '''Check if a block is empty'''
+        instrs = self._block_map[block].instructions
+        return len(instrs) == 2 and instrs[1]['opcode'] == 'jmp'
+
+    def _coalesce(self) -> bool:
+        '''Coalesce all linear blocks'''
+        modified = False
+        while True:
+            for b1 in self._block_map:
+                if len(self._fwd[b1]) == 1:
+                    b2 = next(iter(self._fwd[b1]))
+                    if self._can_merge(b1, b2):
+                        instructions = self._block_map[b1].instructions[:-1] \
+                            + self._block_map[b2].instructions
+                        self._block_map[b1] = BasicBlock(instructions)
+                        self._uce()
+                        modified = True
+                        break  # Repeat process
+            break  # No more blocks that can be merged
+        return modified
 
     def _uce(self) -> None:
         '''Perform Unreachable Code Elimination'''
         visited_blocks = self._uce_traversal(self._entry_block, set())
-        unreachable_blocks = self._block_map.keys() - visited_blocks
-        for block in unreachable_blocks:
-            del self._block_map[block]
-            if block in self._fwd:
-                del self._fwd[block]
-            if block in self._bwd:
-                del self._bwd[block]
-            if block in self._empty_blocks:
-                self._empty_blocks.remove(block)
+        self._construct_cfg(self._entry_block, [
+                            basic_block for block_key, basic_block in self._block_map.items() if block_key in visited_blocks])
 
     def _uce_traversal(self, block: str, visited_blocks: set) -> set:
         '''Perform DFS on the cfg and return all the visited blocks'''
@@ -152,41 +147,104 @@ class CFG():
                 visited_blocks = self._uce_traversal(block, visited_blocks)
         return visited_blocks
 
-    def _jump_threading_sequencing(self) -> None:
+    def _unconditional_jump_threading_sequencing(self) -> bool:
         '''Sequence a linear sequence of blocks'''
+        modified = False
+        while True:
+            for b1 in self._block_map:
+                if self._is_empty(b1) and len(self._fwd[b1]) == 1:
+                    # print(self._block_map[b1].instructions)
+                    block_sequence = [b1]
+                    bi = b1
+                    while True:
+                        bj = next(iter(self._fwd[bi]))
+                        if self._can_merge(bi, bj) and self._is_empty(bj):
+                            block_sequence.append(bj)
+                            bi = bj
+                        else:
+                            break
+                    if b1 != bi:
+                        self._block_map[b1].instructions[-1]['args'] = [bi]
+                        self._uce()
+                        modified = True
+                    break  # Repeat process
+            break  # No more blocks to merge
+        return modified
 
-        changed = True
-        while changed:
-            changed = False
-            empty_pairs = []
-            for bi in self._block_map.keys():
-                dests = self._fwd[bi]  # Might have to replace with get
-                if len(dests) == 1:
-                    bj = next(iter(dests))
-                    if len(self._bwd[bj]) == 1 \
-                            and len(self._block_map[bj].instructions) == 2 \
-                            and self._block_map[bj].instructions[-1]['opcode'] == 'jmp':
-                        empty_pairs.append((bi, bj))
-            if len(empty_pairs):
-                changed = True
-                while empty_pairs:
-                    bi, bj = empty_pairs.pop()
-                    self._fwd[bi] = self._fwd[bj]
+    def _fetch_condition(self, block: str) -> str:
+        pass
+
+    def _check_writes(self, block: str, temporary: str) -> bool:
+        '''Check if there are any writes to a temporary in a given block'''
+        return any((True if temporary in instr['result'] else False for instr in self._block_map[block].instructions))
+
+    def _update_jmp(self, block: str, label: str) -> None:
+        '''Given a new label update the jmp at the end of a block'''
+        self._block_map[block].instructions[-1]['args'] = [label]
+
+    def _conditional_jump_threading_sequencing(self) -> bool:
+        '''Turn a sequence of conditional jumps into uncoditional
+        jumps with jump threading'''
+        modified = False
+        while True:
+            for b1 in self._block_map:
+                for b2 in self._fwd[b1]:
+                    jmp_instr_b1 = next(
+                        (instr for instr in self._block_map[b1].instructions if instr['opcode']
+                         in _conditional_jumps if instr['args'][-1] == b2), None)
+                    if jmp_instr_b1:
+                        temporary = jmp_instr_b1['args'][0]
+                        jmp_instr_b2 = next(
+                            ((i, instr) for i, instr in enumerate(self._block_map[b2].instructions) if instr['opcode']
+                             in _conditional_jumps if instr['args'][0] == temporary), None)
+                        if jmp_instr_b2:
+                            if not self._check_writes(b2, temporary) and jmp_instr_b2['opcode'] in _conditional_jumps_pars[jmp_instr_b1['opcode']]:
+                                deleted_instr = self._block_map[b2].instructions.pop(jmp_instr_b2[0])
+                                self._update_jmp(b2, deleted_instr['args'][1])
+                                self._uce()
+                                modified = True
+                                break  # Repeat process
+            break # No more blocks to perform conditional jmp threading on
+        return modified
 
     def optimize(self) -> None:
         '''Apply the available optimization routines'''
-        self._coalesce()
-        self._uce()
-        # self._jump_threading_sequencing()
+        modified = True
+        while modified:
+            modified = False
+            modified |= self._unconditional_jump_threading_sequencing()
+            modified |= self._coalesce()
+            modified |= self._conditional_jump_threading_sequencing()
 
     def serialize(self) -> list:
         '''Serialize the cfg and return the tac'''
-        tac = self._block_map[self._entry_block].instructions
-        entry = self._block_map.pop(self._entry_block)
-        for block in self._block_map.values():
-            tac += block.instructions
-        self._block_map[self._entry_block] = entry
+        remaining_blocks = set(self._block_map.keys())
+        remaining_blocks.remove(self._entry_block)
+        schedule: List[str] = []
+        current_block: str = self._entry_block
+        while True:
+            while True:
+                schedule.append(current_block)
+                potential_successors = [
+                    block for block in self._fwd[current_block] if block not in schedule]
+                if not potential_successors:
+                    break
+                current_block = potential_successors[0]
+                remaining_blocks.remove(current_block)
+            if not remaining_blocks:
+                break
+            current_block = remaining_blocks.pop()
+        tac = []
+        for block in schedule:
+            tac += self._block_map[block].instructions
         return tac
+
+    def _check_validity(self) -> bool:
+        '''Verify that the current state of the cfg is valid'''
+        print(self._block_map.keys())
+        print(self._fwd.keys())
+        print(self._bwd.keys())
+        return True
 
 
 def _fresh_label() -> int:
@@ -220,7 +278,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     # Add labels after jumps if necessary
     body_labelled = []
     for i, instr in enumerate(body):
-        if instr['opcode'] in conditional_jumps + ['jmp']:
+        if instr['opcode'] in _conditional_jumps + ['jmp']:
             body_labelled.append(instr)
             if body[i + 1]['opcode'] != 'label':
                 body_labelled.append({'opcode': 'label', 'args': [
@@ -230,11 +288,11 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
     # Create list of BasicBlocks
     block_start, block_end = 0, 1
-    block_list = []
+    block_list: List[BasicBlock] = []
     while block_end < len(body_labelled):
-        while body_labelled[block_end]['opcode'] not in ['jmp', 'ret', 'label'] + conditional_jumps:
+        while body_labelled[block_end]['opcode'] not in ['jmp', 'ret', 'label'] + _conditional_jumps:
             block_end += 1
-        if body_labelled[block_end]['opcode'] in ['jmp', 'ret'] + conditional_jumps:
+        if body_labelled[block_end]['opcode'] in ['jmp', 'ret'] + _conditional_jumps:
             block_list.append(BasicBlock(
                 body_labelled[block_start: block_end+1]))
             block_start = block_end + 1
@@ -260,7 +318,20 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     return block_list
 
 
-def optimize(body: list) -> list:
+def optimize(tac: list) -> list:
+    '''Given an input list of TAC declarations, 
+    optimize the tac for bodies of procedure declarations'''
+    optimized_decls = []
+    for decl in tac:
+        if 'proc' in decl:
+            optimized_decls.append(
+                {'proc': decl['proc'], 'args': decl['args'], 'body': optimize_body(decl['body'])})
+        else:
+            optimized_decls.append(decl)
+    return optimized_decls
+
+
+def optimize_body(body: list) -> list:
     '''Given an input list of TAC instructions, 
     optimize the TAC and output a new list of TAC
     instructions'''
@@ -268,9 +339,6 @@ def optimize(body: list) -> list:
     entry_block = basic_blocks[0].label
     cfg = CFG(entry_block, basic_blocks)
     cfg.optimize()
-    # print(cfg._block_map.keys()) # Do not delete - useful for debugging
-    # print(cfg._fwd.keys())
-    # print(cfg._bwd.keys())
     serialized_tac = cfg.serialize()
     return serialized_tac
 
@@ -289,7 +357,7 @@ if __name__ == '__main__':
         opts = ap.parse_args(sys.argv[1:])
 
     json_tac_file = open(opts.fname[0])
-    json_tac = json.load(json_tac_file)[0]['body']
+    json_tac = json.load(json_tac_file)
     optimized_tac = optimize(json_tac)
 
     if opts.o:
