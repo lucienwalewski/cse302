@@ -15,8 +15,12 @@ from ast2tac import Instr
 from typing import List
 import sys
 import os
+import random
+import string
 
-register_temporaries = {1:"rdi", 2:"rsi", 3:"rdx", 4:"rcx", 5:"r8", 6:"r9"}
+arg_nb_to_reg = {1:"rdi", 2:"rsi", 3:"rdx", 4:"rcx", 5:"r8", 6:"r9"}
+reg_to_arg_nb = {"rdi":1, "rsi":2, "rdx":3, "rcx":4, "r8":5, "r9":6}
+
 
 jcc = {"je": (lambda arg, label: ['movq $0, %r11',
                                   f'cmpq %r11, {arg}',
@@ -68,20 +72,43 @@ unops = {'neg': 'negq',
 
 
 def lookup_temp(temp, temp_map):
+    
+    if temp[0] == "@" :
+        print(f'{temp[1:]}(%rip)')
+        return f'{temp[1:]}(%rip)'
+
     assert (isinstance(temp, str) and
-            temp[0] == '%' and
-            temp[1:].isnumeric()), temp
+            temp[0] == '%'), temp
     return temp_map.setdefault(temp, f'{-8 * (len(temp_map) + 1)}(%rbp)')
 
 
-def tac_to_asm(tac_instrs):
+def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
     """
-    Get the x64 instructions correspondign to the TAC instructions
+    Get the x64 instructions correspondign to the TAC instructions for the procedure
     """
+    letters = string.ascii_letters  
     temp_map = dict()
     asm = []
+    ret_label = ''.join(random.choice(letters) for i in range(5)) 
+    reg_list = reg_to_arg_nb.keys()
+    for reg in reg_list :
+        asm.append(f'pushq %{reg}')
+    
+    asm.append(f'pushq $0')
     
 
+    M = len(reg_list)+1
+    asm.append(f'movq %rsp, %rbp')
+    
+    for index_arg in range(0,len(args_proc)) :
+        if index_arg<= 5 :
+            stack_slot = lookup_temp(args_proc[index_arg],temp_map)
+            asm.append(f'movq %{arg_nb_to_reg[index_arg+1]}, {stack_slot}')
+        else :
+            stack_slot = lookup_temp(args_proc[index_arg],temp_map)
+            asm.append(f'movq {8*(index_arg+1)}(%rbp), {stack_slot}')
+            
+            
     for instr in tac_instrs:
         opcode = instr["opcode"]
         args = instr["args"]
@@ -106,22 +133,33 @@ def tac_to_asm(tac_instrs):
             # empty the list of call arguments 
 
             for index_arg in range(1,min(6,args[1])+1) :
-                arg_temp = lookup_temp("%-"+index_arg, temp_map)
-                asm.append(f'movq {arg_temp}, {register_temporaries[index_arg]}')
+                arg_temp = lookup_temp('%-{index_arg}', temp_map)
+                asm.append(f'movq {arg_temp}, %{arg_nb_to_reg[index_arg]}')
             
             for index_arg in range(args[1], min(6,args[1]),-1) :
-                arg_temp = lookup_temp("%-"+index_arg, temp_map) 
+                arg_temp = lookup_temp('%-{index_arg}', temp_map) 
                 asm.append(f'pushq {arg_temp}')
             
             if args[1] > 6 and (args[1]%2) :
                 asm.append(f'pushq $0')
             
-            asm.append(f'callq {arg[0]}')
+            asm.append(f'callq {args[0][1:]}')
             asm.append(f'addq ${  8  *  (args[1]-6) + args[1]%2 }, %rsp')
-            asm.append(f'movq %rax, {result[0]}')
+            if result :
+                
+                asm.append(f'movq %rax, {result[1:]}')
             
 
-        
+        elif opcode == "ret" :
+            if len(args) != 0 :
+                asm.append(f'movq {lookup_temp(args[0],temp_map)}, %rax ')
+                asm.append(f'jmp .{ret_label}')
+
+
+            else :
+                asm.append(f'xorq %rax, %rax')
+                asm.append(f'jmp .{ret_label}')
+
         elif opcode == 'const':
             assert len(args) == 1 and isinstance(args[0], int)
             result = lookup_temp(result, temp_map)
@@ -179,45 +217,61 @@ def tac_to_asm(tac_instrs):
     asm[:0] = [f'pushq %rbp',
                f'movq %rsp, %rbp',
                f'subq ${8 * len(temp_map)}, %rsp'] 
-    asm.extend([f'Lret:',
-                f'movq %rbp, %rsp',
-                f'popq %rbp',
-                f'xorq %rax, %rax',
+    asm.extend([f'.{ret_label}:',
+                f'movq %rbp, %rsp'])
+    asm.append(f'addq $8, %rsp')
+    for reg in reg_list[::-1] :
+        asm.append(f'popq %{reg}')
+
+    asm.extend([f'popq %rbp',
                 f'retq'])
     return asm
 
-def compile_tac(tac: List[Instr], fname: str, write: bool=True):
-    assert isinstance(tac, list) and len(tac) == 1, tac
-    tac = tac[0]
-    assert 'proc' in tac and tac['proc'] == '@main', tac
-    asm = ['\t' + line for line in tac_to_asm(tac['body'])]
-    if write:
-        asm[:0] = [f'\t.section .rodata',
-                   f'.lprintfmt:',
-                   f'\t.string "%ld\\n"',
-                   f'\t.text',
-                   f'\t.globl main',
-                   f'main:']
-        sname = fname[:-3] + '.s'
-        with open(sname, 'w') as afp:
-            print(*asm, file=afp, sep='\n')
-        print(f'{fname} -> {sname}')
+# def compile_tac(tac: List[Instr], fname: str, write: bool=True):
+#     assert isinstance(tac, list) and len(tac) == 1, tac
+#     tac = tac[0]
+#     assert 'proc' in tac and tac['proc'] == '@main', tac
+#     asm = ['\t' + line for line in tac_to_asm(tac['body'])]
+#     if write:
+#         asm[:0] = [f'\t.section .rodata',
+#                    f'.lprintfmt:',
+#                    f'\t.string "%ld\\n"',
+#                    f'\t.text',
+#                    f'\t.globl main',
+#                    f'main:']
+#         sname = fname[:-3] + '.s'
+#         with open(sname, 'w') as afp:
+#             print(*asm, file=afp, sep='\n')
+#         print(f'{fname} -> {sname}')
 
 
 def compile_tac_from_json(fname):
     assert fname.endswith('.tac.json')
     with open(fname, 'rb') as fp:
         tjs = json.load(fp)
-    assert isinstance(tjs, list) and len(tjs) == 1, tjs
-    tjs = tjs[0]
-    assert 'proc' in tjs and tjs['proc'] == '@main', tjs
-    asm = ['\t' + line for line in tac_to_asm(tjs['body'])]
-    asm[:0] = [f'\t.section .rodata',
-               f'.lprintfmt:',
-               f'\t.string "%ld\\n"',
-               f'\t.text',
-               f'\t.globl main',
-               f'main:']
+
+    assert isinstance(tjs, list) , tjs
+    
+    asm = []
+    declarations = []
+    data = []
+    ## iterate through elements of tjs
+    ## if proc, handle it with tac_to_asm_proc
+    ## if var, handle it directly
+    
+    for json_obj in tjs :
+        if "proc" in json_obj.keys() :
+            declarations.append(f'\t.globl {json_obj["proc"][1:]}')
+            asm += [f'{json_obj["proc"][1:]} :']
+            asm += ['\t' + line for line in tac_to_asm_proc(json_obj['body'],json_obj["args"],json_obj["proc"][1:])]
+        if "var" in json_obj.keys() :
+            declarations.append(f'\t.globl {json_obj["var"][1:]}')
+            data.append(f'{json_obj["var"][1:]}:  .quad {json_obj["init"]}')
+
+    
+    asm[:0] = declarations + [f'.data'] + data + [f'.text']
+
+
     sname = fname[:-9] + '.s'
     with open(sname, 'w') as afp:
         print(*asm, file=afp, sep='\n')
