@@ -137,6 +137,7 @@ class Variable(Expr):
                 'type': self.ty,
                 'name': self.name}
 
+
 def get_declared_var(scopes):
     declared_var = []
     for scope in scopes:
@@ -144,7 +145,6 @@ def get_declared_var(scopes):
             if isinstance(scope[key], str):
                 declared_var.append(key)
     return declared_var
-
 
 
 class Number(Expr):
@@ -256,7 +256,8 @@ class IfElse(Stmt):
             raise TypeError(
                 f'IfElse condition must be of type bool - cannot be of type {self.condition.ty} at line {self.sloc}')
         context.append("if")
-        if_return_statement =  self.block.type_check(scopes, return_type, context)
+        if_return_statement = self.block.type_check(
+            scopes, return_type, context)
         return_statement |= (self.ifrest.type_check(
             scopes, return_type, context) and if_return_statement)
         return return_statement
@@ -528,6 +529,8 @@ class Procdecl(Decl):
             global_scope, self.return_type, context)
         if not return_statement and self.return_type.ty_str != "void":
             raise Exception
+        if not isinstance(self.block.stmts[-1], Return):
+            self.block.stmts.append(Return(0, None))
         global_scope.pop()
 
 

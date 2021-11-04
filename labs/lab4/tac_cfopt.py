@@ -20,8 +20,8 @@ _conditional_jumps = ["je", "jne", "jl", "jle",
                       "jg", "jge"]  # list of cond jump instructions
 
 _conditional_jumps_pars = {'je': ['je', 'jle', 'jge'], 'jne': ['jne'],
-                        'jl': ['jl', 'jne', 'jle'], 'jle': ['jle'],
-                        'jg': ['jg', 'jne', 'jge'], 'jge': ['jge']}
+                           'jl': ['jl', 'jne', 'jle'], 'jle': ['jle'],
+                           'jg': ['jg', 'jne', 'jge'], 'jge': ['jge']}
 
 
 class BasicBlock():
@@ -35,7 +35,6 @@ class BasicBlock():
         assert label["opcode"] == 'label', 'Incorrect beginning of basic block'
         self._label = label["args"][0]
         self._prev = set()
-        # self._succ = set()
         self.update_succ()
         # self._empty_body = True if len(self.instructions) == 2 else False
 
@@ -98,10 +97,11 @@ class CFG():
         self._block_map = dict({block.label: block for block in blocks})
         self._fwd = dict({label: set() for label in self._block_map})
         self._bwd = dict({label: set() for label in self._block_map})
-        for block in self._block_map:
-            for succ in self._block_map[block].succ:
-                self._fwd[block].add(succ)
+        # for block in self._block_map:
+        #     for succ in self._block_map[block].succ:
+        #         self._fwd[block].add(succ)
 
+        # self._check_validity()
         for origin, dests in self._fwd.items():
             for dest in dests:
                 self._bwd[dest].add(origin)
@@ -153,7 +153,6 @@ class CFG():
         while True:
             for b1 in self._block_map:
                 if self._is_empty(b1) and len(self._fwd[b1]) == 1:
-                    # print(self._block_map[b1].instructions)
                     block_sequence = [b1]
                     bi = b1
                     while True:
@@ -198,13 +197,14 @@ class CFG():
                             ((i, instr) for i, instr in enumerate(self._block_map[b2].instructions) if instr['opcode']
                              in _conditional_jumps if instr['args'][0] == temporary), None)
                         if jmp_instr_b2:
-                            if not self._check_writes(b2, temporary) and jmp_instr_b2['opcode'] in _conditional_jumps_pars[jmp_instr_b1['opcode']]:
-                                deleted_instr = self._block_map[b2].instructions.pop(jmp_instr_b2[0])
+                            if not self._check_writes(b2, temporary) and jmp_instr_b2[1]['opcode'] in _conditional_jumps_pars[jmp_instr_b1['opcode']]:
+                                deleted_instr = self._block_map[b2].instructions.pop(
+                                    jmp_instr_b2[0])
                                 self._update_jmp(b2, deleted_instr['args'][1])
                                 self._uce()
                                 modified = True
                                 break  # Repeat process
-            break # No more blocks to perform conditional jmp threading on
+            break  # No more blocks to perform conditional jmp threading on
         return modified
 
     def optimize(self) -> None:
@@ -256,7 +256,7 @@ def _fresh_label() -> int:
 
 
 def find_largest_label(body: list) -> int:
-    return max([int(instr['args'][0][3:]) for instr in body if instr['opcode'] == 'label'])
+    return max([int(instr['args'][0][3:]) for instr in body if instr['opcode'] == 'label'], default=0)
 
 
 def build_basic_blocks(body: list) -> List[BasicBlock]:
@@ -286,7 +286,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
         else:
             body_labelled.append(instr)
 
-    # Create list of BasicBlocks
+    # Create list of BasicBlocksblock_labellei
     block_start, block_end = 0, 1
     block_list: List[BasicBlock] = []
     while block_end < len(body_labelled):

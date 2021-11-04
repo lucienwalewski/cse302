@@ -1,13 +1,12 @@
 import argparse
 import sys
-from ast2tac import Prog
+from bx_ast import Program
 from lexer import lexer
 from parser import parser
 
 
-
-def bxfront(filename: str) -> Prog:
-    '''Parse and type check bx and return a prog'''
+def bxfront(filename: str) -> Program:
+    '''Parse and type check bx and return a program'''
     with open(filename, 'r') as bx_file:
         try:
             prog = parser.parse(bx_file.read(), lexer=lexer)
@@ -15,10 +14,8 @@ def bxfront(filename: str) -> Prog:
         except SyntaxError as serr:
             print(serr)
             exit(1)
-        # else:
-        #     print('Successfully lexed and parsed and type checked')
 
-    
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(
         description="Runs the parser and type-checker alone")
@@ -28,4 +25,3 @@ if __name__ == '__main__':
     assert(opts.fname[0].endswith(".bx"))
     filename = opts.fname[0]
     bxfront(filename)
-

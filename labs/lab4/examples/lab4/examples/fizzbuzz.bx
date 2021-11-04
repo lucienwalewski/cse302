@@ -20,11 +20,8 @@ def fizzbuzz(cur, last : int) {
       print(cur);
     }
     cur = cur + 1;
-    // cur = cure + 1;
-    // cure = cur + 1;
-    //cur = 9223372036854775808;
   }
-  return;
+  // return;
 }
 
 var z = true : bool;

@@ -41,7 +41,7 @@ class Prog():
     def __init__(self, prog: Program) -> None:
         self.prog = prog
         self.localtemps = []
-        self.__tempmap = dict()
+        # self.__tempmap = dict()
         self.__last = -1
         self.__last_label = -1
         self._break_stack = deque()
@@ -63,9 +63,6 @@ class Prog():
                 for instr in body:
                     compilation_units_js[-1]['body'].append(instr.js_obj)
             else:
-                # print(unit)
-                # compilation_units_js.append(
-                #     {'var': unit['var'].js_obj, 'init': unit['init'].js_obj})
                 compilation_units_js.append(unit)
         return compilation_units_js
 
@@ -86,7 +83,6 @@ class Prog():
                 # global_scope[decl.name] = (dec)
                 # for param in decl.params
         self.scopes = [global_scope]
-        print(self.scopes)
 
     def create_compilation_units(self) -> None:
         '''Create a list of compilation units'''
@@ -120,7 +116,6 @@ class Prog():
             for param in decl.params:
                 for arg in param.names:
                     new_scope[arg] = f'%{arg}'
-                    # new_scope[arg] = self._fresh()
         self.scopes.append(new_scope)
         instructions = [self.tmm_stmt(stmt) for stmt in decl.block.stmts]
         self.scopes.pop()
@@ -156,8 +151,14 @@ class Prog():
         '''Emit code to evaluate 'expr', 
         storing the result in target'''
         if expr.ty.ty_str == 'bool':
-            Lt, Lf = [self._fresh_label() for _ in range(2)]
+            Lt, Lf, Lend = [self._fresh_label() for _ in range(3)]
             self.tmm_bool_expr(expr, Lt, Lf)
+            self._emit('label', [Lt], None)
+            self._emit('const', [1], target)
+            self._emit('jmp', [Lend], None)
+            self._emit('label', [Lf], None)
+            self._emit('const', [0], target)
+            self._emit('label', [Lend], None)
         elif isinstance(expr, Number):
             self._emit('const', [expr.value], target)
         elif isinstance(expr, Variable):
@@ -242,6 +243,7 @@ class Prog():
             raise ValueError(f'tmm_stmt: unknown stmt kind: {stmt.__class__}')
 
     def tmm_assign(self, stmt: Assign) -> None:
+        '''Munch an assignment'''
         target = self._lookup(stmt.var.name)
         self.tmm_expr(stmt.expr, target)
 
@@ -307,7 +309,7 @@ class Prog():
             self.tmm_expr(ret.expr, target)
             self._emit('ret', [target], None)
         else:
-            self._emit('ret', [None], None)
+            self._emit('ret', [], None)
 
     def tmm_call(self, call: Call, target: str = None) -> None:
         '''Munch a procedure call. If the target is None
@@ -317,159 +319,10 @@ class Prog():
             new_target = self._fresh()
             self.tmm_expr(expr, new_target)
             targets.append((position, new_target))
-            self._emit('param', [position + 1, new_target], None)
-        # for position, targ in targets:
-        #     self._emit('param', [position + 1, targ], None)
+            # self._emit('param', [position + 1, new_target], None)
+        for position, targ in targets:
+            self._emit('param', [position + 1, targ], None)
         self._emit('call', [f'@{call.func}', position + 1], target)
-
-
-class Proc():
-    def __init__(self, ast_prog: Program, alg='tmm'):
-        self.localtemps = []
-        self.instrs = []
-        self.__tempmap = dict()
-        self.__last = -1
-        self.__last_label = -1
-        self._break_stack = deque()
-        self._continue_stack = deque()
-        for v in ast_prog.lvars:
-            self._emit('const', [0], self._lookup(v))
-        self.tmm_stmt(ast_prog.block)
-
-    @property
-    def js_obj(self):
-        '''Return json file for Prog'''
-        return [{'proc': '@main',
-                 'body': [i.js_obj for i in self.instrs]}]
-
-    def _fresh(self) -> int:
-        '''Obtain fresh temporary'''
-        self.__last += 1
-        t = f'%{self.__last}'
-        self.localtemps.append(t)
-        return t
-
-    def _fresh_label(self) -> int:
-        '''Obtain fresh label'''
-        self.__last_label += 1
-        t = f'%.L{self.__last_label}'
-        return t
-
-    def _lookup(self, var: str) -> int:
-        '''Lookup temporary assigned to variable'''
-        t = self.__tempmap.get(var)
-        if t is None:
-            t = self._fresh()
-            self.__tempmap[var] = t
-        return t
-
-    def _emit(self, opcode, args, result) -> None:
-        '''Append instruction to list of instructions'''
-        self.instrs.append(Instr(opcode, args, result))
-
-    def tmm_int_expr(self, expr: Expr, target) -> None:
-        '''Emit code to evaluate 'expr', 
-        storing the result in target'''
-        if isinstance(expr, Number):
-            self._emit('const', [expr.value], target)
-        elif isinstance(expr, Variable):
-            src = self._lookup(expr.name)
-            self._emit('copy', [src], target)
-        elif isinstance(expr, OpApp):
-            args = []
-            for arg in expr.args:
-                arg_target = self._fresh()
-                self.tmm_int_expr(arg, arg_target)
-                args.append(arg_target)
-            self._emit(opcode_map[expr.op], args, target)
-        else:
-            raise ValueError(
-                f'tmm_expr: unknown expr kind {expr.__class__}')
-
-    def tmm_bool_expr(self, bexpr: Expr, Lt, Lf) -> None:
-        '''Emit code to evaluate 'bexpr', 
-        jumping to 'Lt' if true and 'Lf'
-        if false.'''
-        if isinstance(bexpr, Bool):
-            if bexpr.value == True:
-                self._emit('jmp', [Lt], None)
-            elif bexpr.value == False:
-                self._emit('jmp', [Lf], None)
-        elif isinstance(bexpr, OpApp):
-            if bexpr.op in {'EQUALITY', 'DISEQUALITY',
-                            'LT', 'LEQ', 'GT', 'GEQ'}:
-                args = []
-                for arg in bexpr.args:
-                    arg_target = self._fresh()
-                    self.tmm_int_expr(arg, arg_target)
-                    args.append(arg_target)
-                self._emit('sub', args, args[0])
-                self._emit(opcode_map[bexpr.op], [args[0], Lt], None)
-                self._emit('jmp', [Lf], None)
-            elif bexpr.op == 'BOOLAND':
-                Li = self._fresh_label()
-                self.tmm_bool_expr(bexpr.args[0], Li, Lf)
-                self._emit('label', [Li], None)
-                self.tmm_bool_expr(bexpr.args[1], Lt, Lf)
-            elif bexpr.op == 'BOOLOR':
-                Li = self._fresh_label()
-                self.tmm_bool_expr(bexpr.args[0], Lt, Li)
-                self._emit('label', [Li], None)
-                self.tmm_bool_expr(bexpr.args[1], Lt, Lf)
-            elif bexpr.op == 'BOOLNEG':
-                self.tmm_bool_expr(bexpr.args[0], Lf, Lt)
-        else:
-            raise ValueError(
-                f'tmm_expr: unknown expr kind: {bexpr.__class__}')
-
-    def tmm_stmt(self, stmt: Stmt) -> None:
-        '''Emit code to evaluate a statement'''
-        if isinstance(stmt, Assign) or isinstance(stmt, Vardecl):
-            target = self._lookup(stmt.var.name)
-            self.tmm_int_expr(stmt.expr, target)
-        elif isinstance(stmt, Print):
-            target = self._fresh()
-            self.tmm_int_expr(stmt.expr, target)
-            self._emit('print', [target], None)
-        elif isinstance(stmt, IfElse):
-            Lt, Lf, Lo = [self._fresh_label() for _ in range(3)]
-            self.tmm_bool_expr(stmt.condition, Lt, Lf)
-            self._emit('label', [Lt], None)
-            self.tmm_stmt(stmt.block)
-            self._emit('jmp', [Lo], None)
-            self._emit('label', [Lf], None)
-            self.tmm_stmt(stmt.ifrest)
-            self._emit('label', [Lo], None)
-        elif isinstance(stmt, Block):
-            for stmt in stmt.stmts:
-                self.tmm_stmt(stmt)
-        elif isinstance(stmt, While):
-            Lhead, Lbod, Lend = [self._fresh_label() for _ in range(3)]
-            self._break_stack.append(Lend)
-            self._continue_stack.append(Lhead)
-            self._emit('label', [Lhead], None)
-            self.tmm_bool_expr(stmt.condition, Lbod, Lend)
-            self._emit('label', [Lbod], None)
-            self.tmm_stmt(stmt.block)
-            self._emit('jmp', [Lhead], None)
-            self._emit('label', [Lend], None)
-            self._break_stack.pop()
-            self._continue_stack.pop()
-        elif isinstance(stmt, Jump):
-            if stmt.op == 'break':
-                if len(self._break_stack) < 1:
-                    raise ValueError(f'Bad break at line {stmt.sloc}')
-                self._emit('jmp', [self._break_stack[-1]], None)
-            elif stmt.op == 'continue':
-                if len(self._continue_stack) < 1:
-                    raise ValueError(f'Bad continue at line {stmt.sloc}')
-                self._emit('jmp', [self._continue_stack[-1]], None)
-        else:
-            print(stmt)
-            raise ValueError(f'tmm_stmt: unknown stmt kind: {stmt.__class__}')
-
-    def get_instructions(self):
-        return self.instrs
 
 
 def ast_to_tac_json(fname, alg):
