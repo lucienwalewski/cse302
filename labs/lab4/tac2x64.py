@@ -25,6 +25,9 @@ reg_to_arg_nb = {"rdi":1, "rsi":2, "rdx":3, "rcx":4, "r8":5, "r9":6}
 jcc = {"je": (lambda arg, label: ['movq $0, %r11',
                                   f'cmpq %r11, {arg}',
                                   f'je {label}']),
+      "jz": (lambda arg, label: ['movq $0, %r11',
+                                  f'cmpq %r11, {arg}',
+                                  f'je {label}']),
        "jne": (lambda arg, label: ['movq $0, %r11',
                                    f'cmpq %r11, {arg}',
                                    f'jne {label}']),
@@ -74,12 +77,11 @@ unops = {'neg': 'negq',
 def lookup_temp(temp, temp_map):
     
     if temp[0] == "@" :
-        print(f'{temp[1:]}(%rip)')
         return f'{temp[1:]}(%rip)'
 
     assert (isinstance(temp, str) and
             temp[0] == '%'), temp
-    return temp_map.setdefault(temp, f'{-8 * (len(temp_map) + 1)}(%rbp)')
+    return temp_map.setdefault(temp, f'{-8 * (len(temp_map) + 1)-64}(%rbp)')
 
 
 def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
@@ -90,15 +92,9 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
     temp_map = dict()
     asm = []
     ret_label = ''.join(random.choice(letters) for i in range(5)) 
-    reg_list = reg_to_arg_nb.keys()
-    for reg in reg_list :
-        asm.append(f'pushq %{reg}')
-    
-    asm.append(f'pushq $0')
-    
 
-    M = len(reg_list)+1
-    asm.append(f'movq %rsp, %rbp')
+    
+    
     
     for index_arg in range(0,len(args_proc)) :
         if index_arg<= 5 :
@@ -115,39 +111,47 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
         result = instr["result"]
         if opcode == 'nop':
             pass
+
         elif opcode == "param" :
             # get stack slot location of the arg
-            arg = lookup_temp(args[1], temp_map)
+            stack_loc = lookup_temp(args[1], temp_map)
+            print("%-"+str(args[0]))
             # create new temporary or fill the old one if we already created one
-            result = lookup_temp("%-"+str(arg[0]) , temp_map)
+            result = lookup_temp("%-"+str(args[0]) , temp_map)
             # copy the arg to stack slot of temporary
-            asm.append(f'movq {arg}, %r11')
+            asm.append(f'movq {stack_loc}, %r11')
             asm.append(f'movq %r11, {result}')
             
         
         elif opcode == "call" :
+
+           
+
             # order the list using by decreasing oreder of the first element of the tupple 
             # put the 7 first arguments into the registers (start by end of the list)
             # when done with the 7 first, start by beginning of the list 
             # push smthg useless if not 16 bytes alignes (nb of args is not even)
             # empty the list of call arguments 
-
+            
             for index_arg in range(1,min(6,args[1])+1) :
-                arg_temp = lookup_temp('%-{index_arg}', temp_map)
+                print(f'%-{index_arg}')
+                arg_temp = lookup_temp(f'%-{index_arg}', temp_map)
                 asm.append(f'movq {arg_temp}, %{arg_nb_to_reg[index_arg]}')
             
             for index_arg in range(args[1], min(6,args[1]),-1) :
-                arg_temp = lookup_temp('%-{index_arg}', temp_map) 
+                arg_temp = lookup_temp(f'%-{index_arg}', temp_map) 
                 asm.append(f'pushq {arg_temp}')
             
             if args[1] > 6 and (args[1]%2) :
                 asm.append(f'pushq $0')
             
             asm.append(f'callq {args[0][1:]}')
-            asm.append(f'addq ${  8  *  (args[1]-6) + args[1]%2 }, %rsp')
-            if result :
+            
+            if args[1] > 6  :
                 
-                asm.append(f'movq %rax, {result[1:]}')
+                asm.append(f'addq ${  8  *  ((args[1]-6) + args[1]%2) }, %rsp')
+            if result :
+                asm.append(f'movq %rax, {lookup_temp(result,temp_map)}')
             
 
         elif opcode == "ret" :
@@ -216,12 +220,9 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
             assert False, f'unknown opcode: {opcode}'
     asm[:0] = [f'pushq %rbp',
                f'movq %rsp, %rbp',
-               f'subq ${8 * len(temp_map)}, %rsp'] 
+               f'subq ${8 * (len(temp_map) + len(temp_map)%2)}, %rsp'] 
     asm.extend([f'.{ret_label}:',
                 f'movq %rbp, %rsp'])
-    asm.append(f'addq $8, %rsp')
-    for reg in reg_list[::-1] :
-        asm.append(f'popq %{reg}')
 
     asm.extend([f'popq %rbp',
                 f'retq'])
