@@ -365,8 +365,7 @@ def optimize_body(body: list) -> list:
     cfg = CFG(entry_block, basic_blocks)
     cfg.optimize()
     serialized_tac = cfg.serialize()
-    # serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
-    # print(serialized_tac)
+    serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
     return serialized_tac
 
 
