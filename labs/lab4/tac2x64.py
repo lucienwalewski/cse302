@@ -245,6 +245,11 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
 #             print(*asm, file=afp, sep='\n')
 #         print(f'{fname} -> {sname}')
 
+def compile_tac(tac: list) -> None:
+    '''Given a list of tac instructions, create an x64
+    file'''
+    # FIXME
+    pass
 
 def compile_tac_from_json(fname):
     assert fname.endswith('.tac.json')
