@@ -115,7 +115,6 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
         elif opcode == "param" :
             # get stack slot location of the arg
             stack_loc = lookup_temp(args[1], temp_map)
-            print("%-"+str(args[0]))
             # create new temporary or fill the old one if we already created one
             result = lookup_temp("%-"+str(args[0]) , temp_map)
             # copy the arg to stack slot of temporary
@@ -134,7 +133,6 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
             # empty the list of call arguments 
             
             for index_arg in range(1,min(6,args[1])+1) :
-                print(f'%-{index_arg}')
                 arg_temp = lookup_temp(f'%-{index_arg}', temp_map)
                 asm.append(f'movq {arg_temp}, %{arg_nb_to_reg[index_arg]}')
             
@@ -245,11 +243,39 @@ def tac_to_asm_proc(tac_instrs, args_proc,name_proc):
 #             print(*asm, file=afp, sep='\n')
 #         print(f'{fname} -> {sname}')
 
-def compile_tac(tac: list) -> None:
+def compile_tac(tjs: list,fname) -> None:
     '''Given a list of tac instructions, create an x64
     file'''
-    # FIXME
-    pass
+    
+    assert isinstance(tjs, list) , tjs
+    
+    asm = []
+    declarations = []
+    data = []
+    ## iterate through elements of tjs
+    ## if proc, handle it with tac_to_asm_proc
+    ## if var, handle it directly
+    
+    for json_obj in tjs :
+        if "proc" in json_obj.keys() :
+            declarations.append(f'\t.globl {json_obj["proc"][1:]}')
+            asm += [f'{json_obj["proc"][1:]} :']
+            asm += ['\t' + line for line in tac_to_asm_proc(json_obj['body'],json_obj["args"],json_obj["proc"][1:])]
+        if "var" in json_obj.keys() :
+            declarations.append(f'\t.globl {json_obj["var"][1:]}')
+            data.append(f'{json_obj["var"][1:]}:  .quad {json_obj["init"]}')
+
+    
+    asm[:0] = declarations + [f'.data'] + data + [f'.text']
+
+
+    
+    with open(fname, 'w') as afp:
+        print(*asm, file=afp, sep='\n')
+    print('compiled into '+'fname')
+    
+
+    
 
 def compile_tac_from_json(fname):
     assert fname.endswith('.tac.json')

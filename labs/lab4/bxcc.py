@@ -16,7 +16,7 @@ import sys
 from bx2front import bxfront
 from bx_ast import Program
 from bx2tac import bx2tac, bx2tacjson
-from tac2x64 import compile_tac
+from tac2x64 import compile_tac_from_json
 from ast2tac import Prog
 from tac_cfopt import optimize
 
@@ -34,14 +34,14 @@ if __name__ == '__main__':
         tac = bx2tacjson(fname)
 
     program: Program = bxfront(fname)  # Parse + type-check
-    prog: Prog = Prog(program)  # Create ast + tac
+    prog: prog = Prog(program)  # Create ast + tac
     tac = prog.js_obj  # Create json for tac
     if opts.optim:
         tac = optimize(tac) # Optimize tac
     if opts.keep_tac:
         with open(fname + '.tac.json', 'w') as f:
             json.dump(tac, f, indent=2)
-    compile_tac(tac, fname + '.s')  # Compile tac to x64
+    compile_tac_from_json(fname + '.tac.json')  # Compile tac to x64
 
     # Commands below to be uncommented and tested
 

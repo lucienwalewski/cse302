@@ -123,8 +123,8 @@ fizzbuzz :
 	movq -72(%rbp), %r11
 	movq %r11, -272(%rbp)
 	movq -272(%rbp), %rax 
-	jmp .tnpin
-	.tnpin:
+	jmp .xSvie
+	.xSvie:
 	movq %rbp, %rsp
 	popq %rbp
 	retq
@@ -148,7 +148,7 @@ main :
 	movq %r11, -80(%rbp)
 	movq -80(%rbp), %rdi
 	callq __bx_print_int
-	.XyuNt:
+	.tdDSV:
 	movq %rbp, %rsp
 	popq %rbp
 	retq

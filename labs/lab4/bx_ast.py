@@ -55,7 +55,7 @@ class Stmt(Node):
         super().__init__(sloc)
         self.ty: Ty
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context):
+    def type_check(self, scopes, return_type: Ty, context):
         pass
 
     def find_variable_type(self, var, scopes) -> str:
@@ -78,7 +78,7 @@ class Block(Stmt):
         super().__init__(sloc)
         self.stmts = stmts
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context):
+    def type_check(self, scopes, return_type: Ty, context):
         '''Type check block by pushing new scope at start
         which is popped at the end'''
         scopes.append(dict())
@@ -123,7 +123,7 @@ class Variable(Expr):
         if type:
             self.ty = Ty(self.sloc, type)
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         for scope in reversed(scopes):
             if self.name in scope:
                 self.ty = Ty(None, scope[self.name])
@@ -149,7 +149,7 @@ class Number(Expr):
         self.value = value
         self.ty = Ty(self.sloc, 'int')
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         if (self.value >> 63) not in [-1, 0]:
             raise ValueError(
                 f'line {self.sloc}:Error:Number "{self.value}" out of range [0, 2<<63)')
@@ -172,7 +172,7 @@ class Bool(Expr):
         self.value = value
         self.ty = Ty(self.sloc, 'bool')
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context):
+    def type_check(self, scopes, return_type: Ty, context):
         return False
 
     @property
@@ -194,7 +194,7 @@ class OpApp(Expr):
         self.op = op
         self.args = tuple(args)     # make container class explicitly a tuple
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context=None) -> None:
+    def type_check(self, scopes, return_type: Ty, context=None) -> None:
         '''Recursively type check expression'''
         for arg in self.args:
             arg.type_check(scopes, return_type, context)
@@ -239,7 +239,7 @@ class IfElse(Stmt):
         self.block = block
         self.ifrest = ifrest
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         '''Type check IfElse'''
         return_statement = False
         self.condition.type_check(scopes, return_type, context)
@@ -271,7 +271,7 @@ class While(Stmt):
         self.condition = condition
         self.block = block
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         self.condition.type_check(scopes, return_type, context)
         if self.condition.ty.ty_str != 'bool':
             raise TypeError(
@@ -312,7 +312,7 @@ class Assign(Stmt):
         self.var = var
         self.expr = expr
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         '''Type check an assignment. Check that variable was previously
         declared and that types of expr and var match'''
         self.var.type_check(scopes, return_type, context)
@@ -338,7 +338,7 @@ class Eval(Stmt):
         super().__init__(sloc)
         self.expr = expr
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context):
+    def type_check(self, scopes, return_type: Ty, context):
         '''Type check the expression of an e,valuation'''
 
         self.expr.type_check(scopes, return_type, context)
@@ -353,12 +353,12 @@ class Eval(Stmt):
 class Call(Expr):
     """Procedure call"""
 
-    def __init__(self, sloc, func: str, exprs: list[Expr]):
+    def __init__(self, sloc, func: str, exprs):
         super().__init__(sloc)
         self.func = func
         self.exprs = exprs
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         if self.func == 'print':
             assert len(self.exprs) == 1
             expr = self.exprs[0]
@@ -391,7 +391,7 @@ class Return(Stmt):
         if expr is None:
             self.ty = Ty(self.sloc, 'void')
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         if self.expr is not None:
             self.expr.type_check(scopes, return_type, context)
             self.ty = self.expr.ty
@@ -438,7 +438,7 @@ class Varinit(Decl):
         global_scope[self.var.name] = self.expr.ty.ty_str
         self.var.ty = self.expr.ty
 
-    def type_check(self, scopes: list[dict], var_type: Ty, context) -> None:
+    def type_check(self, scopes, var_type: Ty, context) -> None:
         '''Type check a single variable initialisation. Add variable
         to current scope if no errors raised'''
         if self.var.name in scopes[-1]:
@@ -473,7 +473,7 @@ class Vardecl(Decl):
         for varinit in self.varinits:
             varinit.type_check_global(global_scope, self.ty)
 
-    def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
+    def type_check(self, scopes, return_type: Ty, context) -> None:
         for varinit in self.varinits:
             varinit.type_check(scopes, self.ty, None)
         return False
@@ -488,7 +488,7 @@ class Param(Node):
 
 
 class Procdecl(Decl):
-    def __init__(self, sloc, name: str, params: list[Param], return_type: Ty, block: Block) -> None:
+    def __init__(self, sloc, name: str, params, return_type: Ty, block: Block) -> None:
         super().__init__(sloc)
         self.name = name
         self.params = params
@@ -510,7 +510,7 @@ class Procdecl(Decl):
             raise ValueError(f'Declaration {self.name} already declared')
         global_scope[self.name] = (args_type, self.return_type.ty_str)
 
-    def body_type_check(self, global_scope: list[dict]) -> None:
+    def body_type_check(self, global_scope) -> None:
         '''Type check the body of a procedure'''
         context = ["proc"]
         body_scope = global_scope[0][self.name][0]
