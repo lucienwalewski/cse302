@@ -97,9 +97,9 @@ class CFG():
         self._block_map = dict({block.label: block for block in blocks})
         self._fwd = dict({label: set() for label in self._block_map})
         self._bwd = dict({label: set() for label in self._block_map})
-        # for block in self._block_map:
-        #     for succ in self._block_map[block].succ:
-        #         self._fwd[block].add(succ)
+        for block in self._block_map:
+            for succ in self._block_map[block].succ:
+                self._fwd[block].add(succ)
 
         # self._check_validity()
         for origin, dests in self._fwd.items():
@@ -108,7 +108,7 @@ class CFG():
 
     def _can_merge(self, b1: str, b2: str) -> bool:
         '''Check if two block can be merged'''
-        return self._fwd[b1] == [b2] and self._bwd[b2] == [b1]
+        return self._fwd[b1] == {b2} and self._bwd[b2] == {b1}
 
     def _is_empty(self, block: str) -> bool:
         '''Check if a block is empty'''
@@ -119,6 +119,7 @@ class CFG():
         '''Coalesce all linear blocks'''
         modified = False
         while True:
+            recently_modified = False
             for b1 in self._block_map:
                 if len(self._fwd[b1]) == 1:
                     b2 = next(iter(self._fwd[b1]))
@@ -128,12 +129,17 @@ class CFG():
                         self._block_map[b1] = BasicBlock(instructions)
                         self._uce()
                         modified = True
+                        recently_modified = True
                         break  # Repeat process
-            break  # No more blocks that can be merged
+            if recently_modified:
+                continue
+            else:
+                break  # No more blocks that can be merged
         return modified
 
     def _uce(self) -> None:
         '''Perform Unreachable Code Elimination'''
+        self._construct_cfg(self._entry_block, self._block_map.values())
         visited_blocks = self._uce_traversal(self._entry_block, set())
         self._construct_cfg(self._entry_block, [
                             basic_block for block_key, basic_block in self._block_map.items() if block_key in visited_blocks])
@@ -151,8 +157,9 @@ class CFG():
         '''Sequence a linear sequence of blocks'''
         modified = False
         while True:
+            recently_modified = False
             for b1 in self._block_map:
-                if self._is_empty(b1) and len(self._fwd[b1]) == 1:
+                if len(self._fwd[b1]) == 1:
                     block_sequence = [b1]
                     bi = b1
                     while True:
@@ -161,13 +168,19 @@ class CFG():
                             block_sequence.append(bj)
                             bi = bj
                         else:
-                            break
-                    if b1 != bi:
+                            block_sequence.append(bj)
+                            bi = bj
+                            break  # End of sequence
+                    if len(block_sequence) > 2:
                         self._block_map[b1].instructions[-1]['args'] = [bi]
                         self._uce()
                         modified = True
-                    break  # Repeat process
-            break  # No more blocks to merge
+                        recently_modified = True
+                        break  # Repeat process
+            if recently_modified:
+                continue
+            else:
+                break  # No more blocks to merge
         return modified
 
     def _fetch_condition(self, block: str) -> str:
@@ -206,6 +219,18 @@ class CFG():
                                 break  # Repeat process
             break  # No more blocks to perform conditional jmp threading on
         return modified
+
+    def _remove_redundant_jumps(self, instrs: list) -> list:
+        '''Remove redundant jumps at the end of blocks
+        once serialized'''
+        new_instrs = []
+        for i, instr in enumerate(instrs[:-1]):
+            if instr['opcode'] == 'jmp':
+                if instr['args'][0] == instrs[i + 1]['args'][0]:
+                    continue
+            else:
+                new_instrs.append(instr)
+        return new_instrs
 
     def optimize(self) -> None:
         '''Apply the available optimization routines'''
@@ -273,7 +298,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     # Add entry label if not present
     if body[0]['opcode'] != 'label':
         body[: 0] = [{"opcode": "label", "args": [
-            _fresh_label()], "result": []}]
+            _fresh_label()], "result": None}]
 
     # Add labels after jumps if necessary
     body_labelled = []
@@ -282,7 +307,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
             body_labelled.append(instr)
             if body[i + 1]['opcode'] != 'label':
                 body_labelled.append({'opcode': 'label', 'args': [
-                    _fresh_label()], 'result': []})
+                    _fresh_label()], 'result': None})
         else:
             body_labelled.append(instr)
 
@@ -305,14 +330,14 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
     # Edge case for tac ending with label
     if block_start == len(body_labelled) - 1 and body_labelled[block_start]['opcode'] == 'label':
-        body_labelled.append({'opcode': 'ret', 'args': [], 'result': []})
+        body_labelled.append({'opcode': 'ret', 'args': [], 'result': None})
         block_list.append(BasicBlock(body_labelled[block_start:]))
 
     # Add explicit jumps for fall-through
     for i, block in enumerate(block_list[:-1]):
         if block.instructions[-1]['opcode'] not in ['jmp', 'ret']:
             block.instructions.append({'opcode': 'jmp', 'args':
-                                       [block_list[i+1].label], 'result': []})
+                                       [block_list[i+1].label], 'result': None})
             block.add_succ(block_list[i+1].label)
 
     return block_list
@@ -340,6 +365,8 @@ def optimize_body(body: list) -> list:
     cfg = CFG(entry_block, basic_blocks)
     cfg.optimize()
     serialized_tac = cfg.serialize()
+    # serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
+    # print(serialized_tac)
     return serialized_tac
 
 

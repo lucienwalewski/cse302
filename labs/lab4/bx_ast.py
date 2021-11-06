@@ -119,32 +119,23 @@ class Variable(Expr):
         name -- string representation of the name of the variable
         """
         super().__init__(sloc)
-        # assert name in self.vardecls
         self.name = name
         if type:
             self.ty = Ty(self.sloc, type)
 
     def type_check(self, scopes: list[dict], return_type: Ty, context) -> None:
-
-        if self.name not in get_declared_var(scopes):
-            raise ValueError(
-                f'{self.name}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
-        return False
+        for scope in reversed(scopes):
+            if self.name in scope:
+                self.ty = Ty(None, scope[self.name])
+                return False
+        raise ValueError(
+            f'{self.name}:line {self.sloc}:Error:Undeclared variable "{self.name}"')
 
     @property
     def js_obj(self):
         return {'tag': 'Variable',
                 'type': self.ty,
                 'name': self.name}
-
-
-def get_declared_var(scopes):
-    declared_var = []
-    for scope in scopes:
-        for key in scope.keys():
-            if isinstance(scope[key], str):
-                declared_var.append(key)
-    return declared_var
 
 
 class Number(Expr):
@@ -457,9 +448,8 @@ class Varinit(Decl):
         if self.expr.ty.ty_str != var_type.ty_str:
             raise ValueError(
                 f'Declaration of variable {self.var.name} of incorrect type')
-        self.var.ty = self.expr.ty
+        self.var.ty = Ty(None, self.expr.ty.ty_str)
         scopes[-1][self.var.name] = self.var.ty.ty_str
-
         return False
 
     @ property

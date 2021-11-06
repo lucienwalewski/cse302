@@ -1,5 +1,6 @@
 import json
 from collections import deque
+from os import name
 
 from bx_ast import *
 
@@ -80,8 +81,6 @@ class Prog():
                     global_scope[varinit.var.name] = f'@{varinit.var.name}'
             if isinstance(decl, Procdecl):
                 global_scope[decl.name] = f'@{decl.name}'
-                # global_scope[decl.name] = (dec)
-                # for param in decl.params
         self.scopes = [global_scope]
 
     def create_compilation_units(self) -> None:
@@ -151,14 +150,14 @@ class Prog():
         '''Emit code to evaluate 'expr', 
         storing the result in target'''
         if expr.ty.ty_str == 'bool':
-            Lt, Lf, Lend = [self._fresh_label() for _ in range(3)]
+            ti = self._fresh()
+            Lt, Lf = [self._fresh_label() for _ in range(2)]
+            self._emit('const', [0], ti)
             self.tmm_bool_expr(expr, Lt, Lf)
             self._emit('label', [Lt], None)
-            self._emit('const', [1], target)
-            self._emit('jmp', [Lend], None)
+            self._emit('const', [1], ti)
             self._emit('label', [Lf], None)
-            self._emit('const', [0], target)
-            self._emit('label', [Lend], None)
+            self._emit('copy', [ti], target)
         elif isinstance(expr, Number):
             self._emit('const', [expr.value], target)
         elif isinstance(expr, Variable):
@@ -192,6 +191,10 @@ class Prog():
                 self._emit('jmp', [Lt], None)
             elif bexpr.value == False:
                 self._emit('jmp', [Lf], None)
+        elif isinstance(bexpr, Variable):
+            src = self._lookup(bexpr.name)
+            self._emit('jz', [src, Lf], None)
+            self._emit('jmp', [Lt], None)
         elif isinstance(bexpr, OpApp):
             if bexpr.op in {'EQUALITY', 'DISEQUALITY',
                             'LT', 'LEQ', 'GT', 'GEQ'}:
@@ -252,6 +255,7 @@ class Prog():
         for varinit in vardecl.varinits:
             target = self._fresh()
             self.tmm_expr(varinit.expr, target)
+            self.scopes[-1][varinit.var.name] = target
 
     def tmm_ifelse(self, ifelse: IfElse) -> None:
         '''Munch an ifelse'''
