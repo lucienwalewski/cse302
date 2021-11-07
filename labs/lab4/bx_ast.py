@@ -204,6 +204,8 @@ class OpApp(Expr):
                        'BITSHL', 'BITSHR', 'NEG', 'BITCOMPL'
                        } and all([arg.ty.ty_str == 'int' for arg in self.args]):
             self.ty = Ty(self.sloc, 'int')
+            if self.op == 'MINUS' and len(self.args) == 1:
+                self.op = 'UMINUS'
         elif self.op in {'EQUALITY', 'DISEQUALITY',
                          'LT', 'LEQ', 'GT', 'GEQ'
                          } and all([arg.ty.ty_str == 'int' for arg in self.args]):
@@ -396,7 +398,7 @@ class Return(Stmt):
             self.expr.type_check(scopes, return_type, context)
             self.ty = self.expr.ty
         if self.ty.ty_str != return_type.ty_str:
-            raise TypeError(
+            raise ValueError(
                 f'"return value type {self.ty.ty_str} does not match the function type {return_type.ty_str}" ')
 
         return True
