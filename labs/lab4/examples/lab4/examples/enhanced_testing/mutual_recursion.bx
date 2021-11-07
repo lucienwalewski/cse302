@@ -5,8 +5,7 @@ def function(arg : int) {
     if (arg != 0) {
         print(x);
         print(y);
-        arg = arg - 1;
-        function(arg);
+        function(arg-1);
         
     }
 
