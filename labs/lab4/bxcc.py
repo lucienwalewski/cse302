@@ -34,9 +34,9 @@ if __name__ == '__main__':
     program: Program = bxfront(fname)  # Parse + type-check
     prog: Prog = Prog(program)  # Create ast + tac
     tac = prog.js_obj  # Create json for tac
-    # if not opts.optim:
-    #     tac = optimize(tac) # Optimize tac
-    #     print('Optimized')
+    if not opts.optim:
+        tac = optimize(tac) # Optimize tac
+        print('Optimized')
     if opts.keep_tac:
         with open(fname + '.tac.json', 'w') as fp:
             json.dump(tac, fp, indent=2)
