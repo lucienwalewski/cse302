@@ -519,7 +519,7 @@ class Procdecl(Decl):
             global_scope, self.return_type, context)
         if not return_statement and self.return_type.ty_str != "void":
             raise Exception
-        if not isinstance(self.block.stmts[-1], Return):
+        if not self.block.stmts or not isinstance(self.block.stmts[-1], Return):
             self.block.stmts.append(Return(0, None))
         global_scope.pop()
 
