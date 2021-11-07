@@ -1,0 +1,25 @@
+var x = 10, y = 15 : int; // Global variable to test type checking
+
+def function(arg : int) {
+
+    if (arg != 0) {
+        print(x);
+        print(y);
+        arg = arg - 1;
+        function(arg);
+        
+    }
+
+    
+    
+
+
+}
+
+var z = true : bool;
+
+def main() {
+  function(5);
+  
+  
+}
