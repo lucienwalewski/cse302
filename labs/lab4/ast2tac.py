@@ -218,6 +218,11 @@ class Prog():
                 self.tmm_bool_expr(bexpr.args[1], Lt, Lf)
             elif bexpr.op == 'BOOLNEG':
                 self.tmm_bool_expr(bexpr.args[0], Lf, Lt)
+        elif isinstance(bexpr, Call):
+            target = self._fresh()
+            self.tmm_call(bexpr, target)
+            self._emit('jz', [target, Lf], None)
+            self._emit('jmp', [Lt], None)
         else:
             print(bexpr)
             raise ValueError(

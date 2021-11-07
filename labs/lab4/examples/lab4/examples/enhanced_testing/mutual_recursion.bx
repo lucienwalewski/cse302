@@ -1,24 +1,24 @@
-var x = 10, y = 15 : int; // Global variable to test type checking
+var res = false : bool;
 
-def function(arg : int) {
-
-    if (arg != 0) {
-        print(x);
-        print(y);
-        function(arg-1);
-        
+def is_even(n : int) : bool {
+    if (n == 0) {
+        return true;
     }
-
-    
-    
-
-
+    res = is_odd(n - 1);
+    return res;
 }
 
-var z = true : bool;
+def is_odd(n : int) : bool {
+    res = is_even(n - 1);
+    return res;
+}
 
 def main() {
-  function(5);
-  
-  
+    var x = 20 : int;
+    var res = false : bool;
+    while (x > 0) {
+        x = x - 1;
+        res = is_even(x);
+        print(res);
+    }
 }

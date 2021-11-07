@@ -355,7 +355,7 @@ class Eval(Stmt):
 class Call(Expr):
     """Procedure call"""
 
-    def __init__(self, sloc, func: str, exprs):
+    def __init__(self, sloc, func: str, exprs: List[Expr]):
         super().__init__(sloc)
         self.func = func
         self.exprs = exprs
@@ -374,7 +374,14 @@ class Call(Expr):
                     f'Cannot print expressions of type: {expr.ty}')
             self.ty = Ty(self.sloc, "void")
         else:
-            ret_ty = self.find_function_type(self.func, scopes)
+            func_type = self.find_function_type(self.func, scopes) 
+            ret_ty = func_type[1]
+            if len(func_type[0]) != len(self.exprs):
+                raise ValueError(f'Incorrect number of expressions given for function {self.func}')
+            for i, arg in enumerate(self.exprs):
+                arg.type_check(scopes, return_type, context)
+                if arg.ty.ty_str != func_type[0][i][1]:
+                    raise ValueError(f'Incorrect type for argument {func_type[0][i][0]}')
             self.ty = Ty(self.sloc, ret_ty)
 
         return False
@@ -382,7 +389,7 @@ class Call(Expr):
     def find_function_type(self, func, scopes) -> str:
         for scope in reversed(scopes):
             if func in scope:
-                return scope[func][1]
+                return scope[func]
         raise ValueError(f'Procedure {func} not declared at line {self.sloc}')
 
 
@@ -503,11 +510,11 @@ class Procdecl(Decl):
 
         proc_name: ({arg_name1 : arg_type1,...}, return_type)
         '''
-        args_type = {}
+        args_type = []
         if self.params is not None:
             for param in self.params:
                 for arg_name in param.names:
-                    args_type[arg_name] = param.ty.ty_str
+                    args_type.append((arg_name, param.ty.ty_str))
         if self.name in global_scope:
             raise ValueError(f'Declaration {self.name} already declared')
         global_scope[self.name] = (args_type, self.return_type.ty_str)
@@ -515,7 +522,7 @@ class Procdecl(Decl):
     def body_type_check(self, global_scope) -> None:
         '''Type check the body of a procedure'''
         context = ["proc"]
-        body_scope = global_scope[0][self.name][0]
+        body_scope = dict(global_scope[0][self.name][0])
         global_scope.append(body_scope)
         return_statement = self.block.type_check(
             global_scope, self.return_type, context)
