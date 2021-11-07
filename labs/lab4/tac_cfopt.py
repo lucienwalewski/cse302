@@ -123,10 +123,9 @@ class CFG():
             for b1 in self._block_map:
                 if len(self._fwd[b1]) == 1:
                     b2 = next(iter(self._fwd[b1]))
-                    if self._can_merge(b1, b2):
-                        instructions = self._block_map[b1].instructions[:-1] \
+                    if self._can_merge(b1, b2) and b2 != self._entry_block:
+                        self._block_map[b1].instructions = self._block_map[b1].instructions[:-1] \
                             + self._block_map[b2].instructions
-                        self._block_map[b1] = BasicBlock(instructions)
                         self._uce()
                         modified = True
                         recently_modified = True
