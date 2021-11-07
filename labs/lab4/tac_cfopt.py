@@ -230,6 +230,7 @@ class CFG():
                     continue
             else:
                 new_instrs.append(instr)
+        new_instrs.append(instrs[-1])
         return new_instrs
 
     def optimize(self) -> None:
@@ -366,6 +367,7 @@ def optimize_body(body: list) -> list:
     cfg.optimize()
     serialized_tac = cfg.serialize()
     serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
+    print(serialized_tac[-1])
     return serialized_tac
 
 
