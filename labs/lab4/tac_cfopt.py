@@ -294,7 +294,7 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
     4. Add explicit jmps for fall-throughs. All blocks must end with a ret or a jmp.
     """
     global __last_label
-    __last_label = find_largest_label(body)
+    __last_label = max(__last_label, find_largest_label(body))
 
     # Add entry label if not present
     if body[0]['opcode'] != 'label':
@@ -366,8 +366,7 @@ def optimize_body(body: list) -> list:
     cfg = CFG(entry_block, basic_blocks)
     cfg.optimize()
     serialized_tac = cfg.serialize()
-    serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
-    print(serialized_tac[-1])
+    # serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
     return serialized_tac
 
 

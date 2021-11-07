@@ -24,7 +24,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='Codegen: BX (JSON) to ASM (x64)')
     ap.add_argument('--keep-tac', dest='keep_tac', action='store_true', default=False,
                     help='Produce intermediate tac.json file')
-    ap.add_argument('--optimize', dest='optim', action='store_true', default=True,
+    ap.add_argument('--no-optimize', dest='optim', action='store_true', default=False,
                     help='Optimize intermediate tac.json file')
     ap.add_argument('fname', metavar='FILE', type=str, nargs=1,
                     help='The BX(JSON) file to process')
@@ -34,8 +34,9 @@ if __name__ == '__main__':
     program: Program = bxfront(fname)  # Parse + type-check
     prog: Prog = Prog(program)  # Create ast + tac
     tac = prog.js_obj  # Create json for tac
-    if opts.optim:
+    if not opts.optim:
         tac = optimize(tac) # Optimize tac
+        print('Optimized')
     if opts.keep_tac:
         with open(fname + '.tac.json', 'w') as fp:
             json.dump(tac, fp, indent=2)
