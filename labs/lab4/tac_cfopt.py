@@ -226,7 +226,9 @@ class CFG():
         for i, instr in enumerate(instrs[:-1]):
             if instr['opcode'] == 'jmp':
                 if instr['args'][0] == instrs[i + 1]['args'][0]:
-                    continue
+                    print(instrs[i])
+                    print(instrs[i + 1])
+                    pass
             else:
                 new_instrs.append(instr)
         new_instrs.append(instrs[-1])
@@ -297,21 +299,22 @@ def build_basic_blocks(body: list) -> List[BasicBlock]:
 
     # Add entry label if not present
     if body[0]['opcode'] != 'label':
-        body[: 0] = [{"opcode": "label", "args": [
+        body[:0] = [{"opcode": "label", "args": [
             _fresh_label()], "result": None}]
 
     # Add labels after jumps if necessary
     body_labelled = []
-    for i, instr in enumerate(body):
-        if instr['opcode'] in _conditional_jumps + ['jmp']:
+    for i, instr in enumerate(body[:-1]):
+        if instr['opcode'] in _conditional_jumps + ['jmp', 'ret']:
             body_labelled.append(instr)
             if body[i + 1]['opcode'] != 'label':
                 body_labelled.append({'opcode': 'label', 'args': [
                     _fresh_label()], 'result': None})
         else:
             body_labelled.append(instr)
+    body_labelled.append(body[-1])
 
-    # Create list of BasicBlocksblock_labellei
+    # Create list of BasicBlocksblock_labelled
     block_start, block_end = 0, 1
     block_list: List[BasicBlock] = []
     while block_end < len(body_labelled):
@@ -365,7 +368,8 @@ def optimize_body(body: list) -> list:
     cfg = CFG(entry_block, basic_blocks)
     cfg.optimize()
     serialized_tac = cfg.serialize()
-    # serialized_tac = cfg._remove_redundant_jumps(serialized_tac)
+    # Unknown bug if activated -> prob in tac->x64
+    # serialized_tac = cfg._remove_redundant_jumps(serialized_tac) 
     return serialized_tac
 
 

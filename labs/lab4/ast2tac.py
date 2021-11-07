@@ -269,6 +269,7 @@ class Prog():
         self._emit('label', [Lt], None)
         self.tmm_stmt(ifelse.block)
         self._emit('jmp', [Lo], None)
+        # if (isinstance(ifelse.ifrest, Block) and ifelse.ifrest.stmts) or (isinstance(ifelse.ifrest, IfElse) and ifelse.ifrest.block.stmts):
         self._emit('label', [Lf], None)
         self.tmm_stmt(ifelse.ifrest)
         self._emit('label', [Lo], None)
