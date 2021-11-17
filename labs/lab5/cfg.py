@@ -70,6 +70,7 @@ class CFG:
         """
         self.proc_name = proc_name
         self.lab_entry = lab_entry
+       
         self._blockmap = {bl.label: bl for bl in blocks}
         self._fwd = {lab: set() for lab in self._blockmap}  # next()
         self._bwd = {lab: set() for lab in self._blockmap}  # prev()

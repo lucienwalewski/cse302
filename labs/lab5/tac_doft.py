@@ -5,6 +5,7 @@ from typing import List, Union
 from cfg import *
 from ssagen import *
 from tac import *
+import copy
 
 def DSE(cfg: CFG) -> None:
     """
@@ -31,7 +32,52 @@ def GCP(tlv, cfg: CFG) -> None:
     """
     Global Copy Propagation. This is a one-shot procedure.
     """
+    new_body = []
     crude_ssagen(tlv, cfg)
+    cfg_copy = copy.copy(cfg)
+    
+    print(len([test for test in cfg.instrs()]))
+
+    # for block in cfg._blockmap.values() :
+    #     print(block)
+   
+    for index,instr in enumerate(cfg_copy.instrs()) :
+        if instr.opcode == "copy" :
+            to_replace = instr.dest
+            to_use = instr.arg1
+            new_blocks = []
+            
+            
+            for block in cfg._blockmap.values() :
+                inst_list = []
+                for instru in block.body:
+                    
+                    if instru.opcode != "copy" or instru.arg1 != to_use or instru.dest != to_replace :
+                    
+                        inst_list.append(Instr(to_use if instru.dest == to_replace else instru.dest, instru.opcode, [(to_use if arg == to_replace else arg) for arg in [instru.arg1,instru.arg2]]) )
+
+                    
+                #new_block = Block(block.label,[Instr(to_use if instru.dest == to_replace else instru.dest, instru.opcode, [(to_use if arg == to_replace else arg) for arg in [instru.arg1,instru.arg2]]) for instru in block.instrs() if (instru.opcode!=instr.opcode or instru.arg1!=instr.arg1 or instru.arg2!=instr.arg2)],block.jumps)
+                
+                new_block = Block(block.label,inst_list,block.jumps)
+                new_blocks.append(new_block)
+    
+            cfg = CFG(cfg.proc_name,cfg.lab_entry,new_blocks)
+            
+            
+
+    # for block in cfg._blockmap.values() :
+    #     print(block)
+    
+    print(len([test for test in cfg.instrs()]))
+    
+
+    
+
+   
+
+    
+    
 
 
 def optimize_decl(tac_proc: Union[Gvar, Proc]) -> Union[Gvar, Proc]:
@@ -42,7 +88,9 @@ def optimize_decl(tac_proc: Union[Gvar, Proc]) -> Union[Gvar, Proc]:
     cfg = infer(tac_proc)
     DSE(cfg)
     GCP(tac_proc, cfg)
+    print(len([test for test in cfg.instrs()]))
     linearize(tac_proc, cfg)
+
     return tac_proc
 
 
@@ -87,6 +135,7 @@ if __name__ == "__main__":
     # Execute the program
     else:
         execute(new_tac_list)
+
 
     #     # cfg.write_dot(fname + '.dot')
     #     # os.system(f'dot -Tpdf -O {fname}.dot.{tac_unit.name[1:]}.dot')
