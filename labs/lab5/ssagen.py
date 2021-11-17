@@ -51,7 +51,7 @@ def tmp_version(tmp):
     try: return tmp[tmp.rindex('.')+1:]
     except ValueError: return ''
 
-def crude_ssagen(tlv, cfg):
+def crude_ssagen(tlv, cfg) -> None:
     livein, liveout = dict(), dict()
     cfglib.recompute_liveness(cfg, livein, liveout)
     for bl in cfg.nodes():
