@@ -70,7 +70,6 @@ class CFG:
         """
         self.proc_name = proc_name
         self.lab_entry = lab_entry
-       
         self._blockmap = {bl.label: bl for bl in blocks}
         self._fwd = {lab: set() for lab in self._blockmap}  # next()
         self._bwd = {lab: set() for lab in self._blockmap}  # prev()
@@ -244,7 +243,7 @@ def fallthrough_to_jump(tac_proc):
         if (not _unconditional.fullmatch(instr.opcode) and \
             cur + 1 < len(instrs) and \
             instrs[cur + 1].opcode == 'label'):
-            tac_proc.body.append(tac.Instr(None, 'jmp', instrs[cur + 1].arg1, None))
+            tac_proc.body.append(tac.Instr(None, 'jmp', (instrs[cur + 1].arg1, None)))
 
 def add_admin_labels(tac_proc):
     """Add labels everywhere they may be needed for basic blocks inference.

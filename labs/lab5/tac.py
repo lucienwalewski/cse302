@@ -192,7 +192,7 @@ class Proc:
     @property
     def js_obj(self):
         return {'proc': self.name,
-                'args': self.args,
+                'args': list(self.t_args),
                 'body': [i.js_obj for i in self.body]}
 
 class Gvar:
@@ -215,7 +215,7 @@ class Gvar:
     @property
     def js_obj(self):
         return {'var': self.name,
-                'init': self.init}
+                'init': self.value}
 
 # ------------------------------------------------------------------------------
 

@@ -51,7 +51,7 @@ def tmp_version(tmp):
     try: return tmp[tmp.rindex('.')+1:]
     except ValueError: return ''
 
-def crude_ssagen(tlv, cfg) -> None:
+def crude_ssagen(tlv, cfg):
     livein, liveout = dict(), dict()
     cfglib.recompute_liveness(cfg, livein, liveout)
     for bl in cfg.nodes():
@@ -62,7 +62,8 @@ def crude_ssagen(tlv, cfg) -> None:
                        for t in ts]
     versions = cfglib.counter(transfn=lambda x: f'.{x}')
     for i in cfg.instrs():
-        if i.dest: i.dest = i.dest + next(versions)
+        if i.dest and i.dest.startswith('%'):
+            i.dest = i.dest + next(versions)
     ver_maps = {cfg.proc_name: {t: t for t in tlv.t_args}}
     for bl in cfg.nodes():
         ver_map = dict()
