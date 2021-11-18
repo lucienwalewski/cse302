@@ -36,40 +36,44 @@ def GCP(tlv, cfg: CFG) -> None:
     crude_ssagen(tlv, cfg)
     cfg_copy = copy.copy(cfg)
     
-    print(len([test for test in cfg.instrs()]))
-
-    # for block in cfg._blockmap.values() :
-    #     print(block)
-   
+    ## iterate over all instructions
     for index,instr in enumerate(cfg_copy.instrs()) :
+        ## look for copy instructions
         if instr.opcode == "copy" :
             to_replace = instr.dest
             to_use = instr.arg1
             new_blocks = []
             
-            
+            ## iterate over all blocks
             for block in cfg._blockmap.values() :
                 inst_list = []
                 for instru in block.body:
-                    
-                    if instru.opcode != "copy" or instru.arg1 != to_use or instru.dest != to_replace :
-                    
-                        inst_list.append(Instr(to_use if instru.dest == to_replace else instru.dest, instru.opcode, [(to_use if arg == to_replace else arg) for arg in [instru.arg1,instru.arg2]]) )
+
+                    ## change the old temp name by the new one in phi functions
+                    if instru.opcode == "phi" :
+                        new_arg = dict()
+                        for label, temp in instru.arg1.items() :
+                            new_arg[label]= temp if temp != to_replace else to_use 
+                        inst_list.append(Instr(to_use if instru.dest == to_replace else instru.dest, instru.opcode, [new_arg]))
+
+                    ## change the old temp name by the new one in other instructions and discard the original copy instruction
+                    elif instru.opcode != "copy" or instru.arg1 != to_use or instru.dest != to_replace :
+                        inst_list.append(Instr(to_use if instru.dest == to_replace else instru.dest, instru.opcode, [(to_use if arg == to_replace else arg) for arg in [instru.arg1,instru.arg2]]))
 
                     
-                #new_block = Block(block.label,[Instr(to_use if instru.dest == to_replace else instru.dest, instru.opcode, [(to_use if arg == to_replace else arg) for arg in [instru.arg1,instru.arg2]]) for instru in block.instrs() if (instru.opcode!=instr.opcode or instru.arg1!=instr.arg1 or instru.arg2!=instr.arg2)],block.jumps)
-                
+                ## create new block with new instructions
                 new_block = Block(block.label,inst_list,block.jumps)
                 new_blocks.append(new_block)
     
+            ## update cfg
             cfg = CFG(cfg.proc_name,cfg.lab_entry,new_blocks)
+            
+    return cfg
             
             
 
-    # for block in cfg._blockmap.values() :
-    #     print(block)
+
     
-    print(len([test for test in cfg.instrs()]))
     
 
     
@@ -87,10 +91,8 @@ def optimize_decl(tac_proc: Union[Gvar, Proc]) -> Union[Gvar, Proc]:
     """
     cfg = infer(tac_proc)
     DSE(cfg)
-    GCP(tac_proc, cfg)
-    print(len([test for test in cfg.instrs()]))
+    cfg = GCP(tac_proc, cfg)
     linearize(tac_proc, cfg)
-
     return tac_proc
 
 
