@@ -3,11 +3,14 @@
 """
 Control Flow Graphs (CFG)
 """
+import re
+from typing import List
 
 import tac
 from io import StringIO
 
 # ------------------------------------------------------------------------------
+
 
 class Block:
     """Basic block -- does not support multiple labels"""
@@ -19,13 +22,17 @@ class Block:
 
     def instrs(self):
         """Iterator over the instructions in the block (excluding label)"""
-        for instr in self.body: yield instr
-        for instr in self.jumps: yield instr
+        for instr in self.body:
+            yield instr
+        for instr in self.jumps:
+            yield instr
 
     def reversed_instrs(self):
         """Reversed iterator over the instructions in the block (excluding label)"""
-        for instr in reversed(self.jumps): yield instr
-        for instr in reversed(self.body): yield instr
+        for instr in reversed(self.jumps):
+            yield instr
+        for instr in reversed(self.body):
+            yield instr
 
     def first_instr(self):
         return next(self.instrs())
@@ -53,15 +60,19 @@ class Block:
 
 # ------------------------------------------------------------------------------
 
+
 def get_jump_dest(jinstr):
-    if jinstr.opcode == 'jmp': return jinstr.arg1
-    if jinstr.opcode != 'ret': return jinstr.arg2
+    if jinstr.opcode == 'jmp':
+        return jinstr.arg1
+    if jinstr.opcode != 'ret':
+        return jinstr.arg2
     # return None otherwise
+
 
 class CFG:
     """Control flow graph"""
 
-    def __init__(self, proc_name, lab_entry, blocks):
+    def __init__(self, proc_name, lab_entry, blocks: List[Block]):
         """
         proc_name: name of the proc
         lab_entry: label of the entry block
@@ -77,7 +88,8 @@ class CFG:
         for bl in blocks:
             for jinstr in bl.jumps:
                 dest = get_jump_dest(jinstr)
-                if dest: self.add_edge(bl.label, dest)
+                if dest:
+                    self.add_edge(bl.label, dest)
 
     def __getitem__(self, lab):
         """
@@ -119,7 +131,8 @@ class CFG:
         self._bwd[block.label] = set()
         for jinstr in block.jumps:
             dest = get_jump_dest(jinstr)
-            if dest: self.add_edge(block.label, dest)
+            if dest:
+                self.add_edge(block.label, dest)
 
     def remove_node(self, block):
         assert block.label in self._blockmap
@@ -150,14 +163,17 @@ class CFG:
         for lab_from, lab_to in self.edges():
             i1 = self._blockmap[lab_from].last_instr()
             i2 = self._blockmap[lab_to].first_instr()
-            if labeled: yield (lab_from, i1, lab_to, i2)
-            else: yield (i1, i2)
+            if labeled:
+                yield (lab_from, i1, lab_to, i2)
+            else:
+                yield (i1, i2)
         # iterate over the instruction pairs inside a block
         for bl in self._blockmap.values():
             if labeled:
                 for i1, i2 in bl.instr_pairs():
                     yield (bl.label, i1, bl.label, i2)
-            else: yield from bl.instr_pairs()
+            else:
+                yield from bl.instr_pairs()
 
     def write_dot(self, tacfile, **kwargs):
         dotfile = f'{tacfile}.{self.proc_name[1:]}.dot'
@@ -166,13 +182,17 @@ class CFG:
             for bl in self._blockmap.values():
                 node_text = str(bl).replace('\n', r'\l')
                 first_break = node_text.find(r'\l') + 2
-                node_label, node_text = node_text[:first_break], node_text[first_break:]
+                node_label, node_text = node_text[:
+                                                  first_break], node_text[first_break:]
                 if 'livein' in kwargs:
-                    node_label += '  // LI: {' + ','.join(kwargs['livein'][bl.first_instr()]) + r'}\l'
+                    node_label += '  // LI: {' + \
+                        ','.join(kwargs['livein'][bl.first_instr()]) + r'}\l'
                 if 'liveout' in kwargs:
-                    node_text += '  // LO: {' + ','.join(kwargs['liveout'][bl.last_instr()]) + r'}\l'
+                    node_text += '  // LO: {' + \
+                        ','.join(kwargs['liveout'][bl.last_instr()]) + r'}\l'
                 node_text = node_label + node_text
-                print(f'{bl.label[2:]}[shape="box",fontname="monospace",fontsize=8,label="{node_text}"];', file=f)
+                print(
+                    f'{bl.label[2:]}[shape="box",fontname="monospace",fontsize=8,label="{node_text}"];', file=f)
             for lab_from, lab_tos in self._fwd.items():
                 for lab_to in lab_tos:
                     print(f'{lab_from[2:]} -> {lab_to[2:]};', file=f)
@@ -180,24 +200,27 @@ class CFG:
 
 # ------------------------------------------------------------------------------
 
-import re
 
 _enders = re.compile(r'jmp|jz|jnz|jl|jle|jnl|jnle|ret')
-_jumps  = re.compile(r'jmp|jz|jnz|jl|jle|jnl|jnle')
-_jcc    = re.compile(r'jz|jnz|jl|jle|jnl|jnle')
-_jabs   = re.compile(r'jmp|ret')
+_jumps = re.compile(r'jmp|jz|jnz|jl|jle|jnl|jnle')
+_jcc = re.compile(r'jz|jnz|jl|jle|jnl|jnle')
+_jabs = re.compile(r'jmp|ret')
 _unconditional = re.compile(r'label|jmp|ret')
+
 
 def apply_label_rewrite(jinstr, tab):
     if jinstr.opcode == 'jmp':
         jinstr.arg1 = tab.get(jinstr.arg1, jinstr.arg1)
     elif jinstr.opcode == 'phi':
-        jinstr.arg1 = tuple((tab.get(lab, lab), tmp) for (lab, tmp) in jinstr.arg1.items())
+        jinstr.arg1 = tuple((tab.get(lab, lab), tmp)
+                            for (lab, tmp) in jinstr.arg1.items())
     elif jinstr.opcode != 'ret':
         jinstr.arg2 = tab.get(jinstr.arg2, jinstr.arg2)
 
+
 class counter:
     """A simple counter"""
+
     def __init__(self, *, start=None, transfn=None):
         self._transfn = transfn
         self._count = start or 0
@@ -208,8 +231,10 @@ class counter:
     def __next__(self):
         c = self._count
         self._count += 1
-        if self._transfn: return self._transfn(c)
+        if self._transfn:
+            return self._transfn(c)
         return c
+
 
 def normalize_labels(tac_proc):
     """Cleanup `tac_proc' to remove multiple entry labels, and renumber as
@@ -234,16 +259,19 @@ def normalize_labels(tac_proc):
     for instr in tac_proc.body:
         apply_label_rewrite(instr, norm_map)
 
+
 def fallthrough_to_jump(tac_proc):
     """Replace all fallthroughs to explicit jumps.
     Assumes that `tac_proc' always has a label after a jump."""
     instrs, tac_proc.body = tac_proc.body, []
     for cur, instr in enumerate(instrs):
         tac_proc.body.append(instr)
-        if (not _unconditional.fullmatch(instr.opcode) and \
-            cur + 1 < len(instrs) and \
-            instrs[cur + 1].opcode == 'label'):
-            tac_proc.body.append(tac.Instr(None, 'jmp', (instrs[cur + 1].arg1, None)))
+        if (not _unconditional.fullmatch(instr.opcode) and
+            cur + 1 < len(instrs) and
+                instrs[cur + 1].opcode == 'label'):
+            tac_proc.body.append(
+                tac.Instr(None, 'jmp', (instrs[cur + 1].arg1, None)))
+
 
 def add_admin_labels(tac_proc):
     """Add labels everywhere they may be needed for basic blocks inference.
@@ -261,7 +289,8 @@ def add_admin_labels(tac_proc):
             # skip conditional jump sequences
             while cur < len(instrs):
                 instr = instrs[cur]
-                if not _jcc.fullmatch(instr.opcode): break
+                if not _jcc.fullmatch(instr.opcode):
+                    break
                 tac_proc.body.append(instr)
                 cur += 1
             # skip unconditional jump
@@ -269,7 +298,9 @@ def add_admin_labels(tac_proc):
             if _jabs.fullmatch(instr.opcode):
                 tac_proc.body.append(instr)
                 cur += 1
-            tac_proc.body.append(tac.Instr(None, 'label', (next(admin_labels), None)))
+            tac_proc.body.append(
+                tac.Instr(None, 'label', (next(admin_labels), None)))
+
 
 def infer(tac_proc):
     """Return a CFG inferred from the proc"""
@@ -289,12 +320,14 @@ def infer(tac_proc):
         cur += 1
         while cur < len(tac_proc.body):
             instr = tac_proc.body[cur]
-            if _enders.fullmatch(instr.opcode): break
+            if _enders.fullmatch(instr.opcode):
+                break
             bl.body.append(instr)
             cur += 1
         while cur < len(tac_proc.body):
             instr = tac_proc.body[cur]
-            if not _enders.fullmatch(instr.opcode): break
+            if not _enders.fullmatch(instr.opcode):
+                break
             bl.jumps.append(instr)
             cur += 1
         blocks.append(bl)
@@ -302,10 +335,12 @@ def infer(tac_proc):
 
 # --------------------------------------------------------------------------------
 
+
 def linearize(tac_proc, cfg):
     seen = set()
     wl = [cfg.lab_entry]
     schedule = []
+
     def emit(bl):
         nonlocal schedule
         schedule.append(tac.Instr(None, 'label', (bl.label, None)))
@@ -314,7 +349,8 @@ def linearize(tac_proc, cfg):
     ret_wl = []
     while len(wl) > 0:
         cur = wl.pop()
-        if cur in seen: continue
+        if cur in seen:
+            continue
         if cfg.out_degree(cur) == 0:
             # delay rets to end
             ret_wl.append(cur)
@@ -325,18 +361,23 @@ def linearize(tac_proc, cfg):
         wl.extend(cfg.successors(cur))
     while len(ret_wl) > 0:
         cur = ret_wl.pop()
-        if cur in seen: continue
+        if cur in seen:
+            continue
         seen.add(cur)
         emit(cfg[cur])
     tac_proc.body = schedule
 
 # ------------------------------------------------------------------------------
 
+
 def filter_liveset(lab, lset):
     for x in lset:
         if isinstance(x, tuple):
-            if x[0] == lab: yield x[1]
-        else: yield x
+            if x[0] == lab:
+                yield x[1]
+        else:
+            yield x
+
 
 def recompute_liveness(cfg, livein, liveout):
     """Perform liveness analysis on the given cfg, storing the results in `livein' and `liveout'.
@@ -348,36 +389,42 @@ def recompute_liveness(cfg, livein, liveout):
         livein[i] = set(i.uses())
         liveout[i] = set()
     dirty = True
+
     def update_livein(i, j_livein):
         nonlocal dirty
         old_count = len(livein[i])
         old_set = str(livein[i])
         i_defs = set(i.defs())
         for x in j_livein:
-            if ((isinstance(x, tuple) and x[1] in i_defs) or \
-                x in i_defs): continue
+            if ((isinstance(x, tuple) and x[1] in i_defs) or
+                    x in i_defs):
+                continue
             livein[i].add(x)
         if old_count != len(livein[i]):
             dirty = True
     while dirty:
         dirty = False
         for (li, i, lj, j) in cfg.instr_pairs(labeled=True):
-            if li == lj: update_livein(i, livein[j])
-            else: update_livein(i, filter_liveset(li, livein[j]))
+            if li == lj:
+                update_livein(i, livein[j])
+            else:
+                update_livein(i, filter_liveset(li, livein[j]))
     for li, i, lj, j in cfg.instr_pairs(labeled=True):
         liveout[i].update(filter_liveset(li, livein[j]))
     # fix the livein sets to remove tuples
     for i, li in livein.items():
-        livein[i] = {x[1] if isinstance(x, tuple) else x \
+        livein[i] = {x[1] if isinstance(x, tuple) else x
                      for x in li}
 
 # ------------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
     import os
     from argparse import ArgumentParser
     ap = ArgumentParser(description='TAC library, parser, and interpreter')
-    ap.add_argument('file', metavar='FILE', type=str, nargs=1, help='A TAC file')
+    ap.add_argument('file', metavar='FILE', type=str,
+                    nargs=1, help='A TAC file')
     ap.add_argument('-v', dest='verbosity', default=0, action='count',
                     help='increase verbosity')
     args = ap.parse_args()
