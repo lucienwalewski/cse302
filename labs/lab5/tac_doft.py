@@ -8,7 +8,7 @@ from tac import *
 import copy
 
 
-def DSE(cfg: CFG) -> None:
+def DSE(cfg: CFG) -> CFG:
     """
     Global Dead Store Elimination
     """
@@ -85,7 +85,7 @@ def optimize_decl(tac_proc: Union[Gvar, Proc]):
     """
     cfg = infer(tac_proc)
     cfg = DSE(cfg)
-    # cfg = GCP(tac_proc, cfg)
+    cfg = GCP(tac_proc, cfg)
     linearize(tac_proc, cfg)
 
 
@@ -122,15 +122,14 @@ if __name__ == "__main__":
         if isinstance(decl, Proc):
             optimize_decl(decl)
         new_tac_list.append(decl)
-        # print(decl)
 
     # Write the output file if requested
     if opts.output:
-        with open(ap.output, 'w') as f:
-            json.dump(new_tac_list, f)
+        with open(opts.output, 'w') as f:
+            json.dump([decl.js_obj for decl in new_tac_list], f)
     # Execute the program
     else:
         execute(new_tac_list)
 
-    #     # cfg.write_dot(fname + '.dot')
-    #     # os.system(f'dot -Tpdf -O {fname}.dot.{tac_unit.name[1:]}.dot')
+        # cfg.write_dot(fname + '.dot')
+        # os.system(f'dot -Tpdf -O {fname}.dot.{tac_unit.name[1:]}.dot')
