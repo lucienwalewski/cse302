@@ -1,6 +1,10 @@
 # CSE302
 
-Github page for CSE302 - Compilers Ecole Polytechnique
+Github page for CSE302 - Compilers Ecole Polytechnique. 
+
+Implemented a compiler in Python for Python.
+
+Navigate to lab 5 for final version of compiler.
 
 ## Structure
 
